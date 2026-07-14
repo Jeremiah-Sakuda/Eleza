@@ -34,7 +34,7 @@ The public judge flow is at `http://localhost:3000`. `/inspect` retains text/PDF
 
 ## Production deployment on Vercel
 
-The deployed app uses only server-side environment variables for secrets. The browser requests a one-minute Realtime client secret from `/api/realtime/token`, then exchanges WebRTC SDP and audio directly with OpenAI. The standard OpenAI key never enters a client response or bundle.
+The deployed app uses only server-side environment variables for secrets. The browser requests OpenAI's minimum-lifetime (10-second) Realtime client secret from `/api/realtime/token`, then exchanges WebRTC SDP and audio directly with OpenAI. The standard OpenAI key never enters a client response or bundle.
 
 1. Create a Supabase project and apply `001_claim_graphs.sql` through `004_demo_rate_limits.sql` in order.
 2. Link a Vercel project from a fresh clone:

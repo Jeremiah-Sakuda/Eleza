@@ -375,7 +375,7 @@ export default function VivaPage() {
       });
       const token = await tokenResponse.json() as { value?: string; error?: string };
       if (!tokenResponse.ok || !token.value) throw new Error(token.error || "Could not authorize the Realtime voice session.");
-      // DECISION: the browser exchanges SDP directly with OpenAI using a one-minute client secret; audio never crosses the app server.
+      // DECISION: the browser exchanges SDP directly with OpenAI using a minimum-lifetime client secret; audio never crosses the app server.
       const realtimeResponse = await fetch("https://api.openai.com/v1/realtime/calls", {
         method: "POST",
         headers: { Authorization: `Bearer ${token.value}`, "Content-Type": "application/sdp" },

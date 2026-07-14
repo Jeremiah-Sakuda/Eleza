@@ -13,6 +13,7 @@
     "verify:dossier": "node --env-file=.env.local --import tsx scripts/verify-dossier.ts",
     "verify:dossier:stored": "node --env-file=.env.local --import tsx scripts/verify-dossier.ts --persist",
     "verify:rate-limit": "node --env-file=.env.local --import tsx scripts/verify-rate-limit.ts",
+    "verify:realtime-token": "node --env-file=.env.local --import tsx scripts/verify-realtime-token.ts",
     "verify:client-secrets": "node --env-file=.env.local scripts/verify-client-secrets.mjs"
   },
   "dependencies": {

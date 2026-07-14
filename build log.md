@@ -288,3 +288,15 @@ Decisions and outcomes:
 - Replaced the server-proxied SDP route with a rate-authorized `/api/realtime/token` endpoint and direct browser-to-OpenAI WebRTC exchange; official Realtime documentation currently fixes client-secret expiry at one minute, and the standard API key remains server-only.
 - Reworked quotas around `viva_sessions.request_ip_hash`: atomic Postgres functions enforce five session creations and five token issuances per salted IP digest per UTC day, a configurable global cap defaulting to 200, and a database-level 150-second maximum checked again before examiner turns.
 - Added a Supabase health select, daily Vercel cron, fresh-clone deployment README, exact environment example, and built-client secret scanner; 16 tests, TypeScript, production build, and a 30-asset bundle scan pass pending migration 004 and hosted-device verification.
+
+## 22 — Production migration confirmation and live acceptance
+
+Prompt:
+
+> Succeeded
+
+Decisions and outcomes:
+
+- Treated the confirmation as authorization to run the database-backed production acceptance suite: the sixth same-IP viva and token attempts were refused, while oversized judge sessions were clamped to 150 seconds.
+- Ran the typed judge flow in the browser through two schema-gated examiner decisions and dossier generation, then verified the new zero-finding dossier appeared in the findings-sorted teacher triage view and that the landing flow remained usable at a 390-by-844 phone viewport.
+- Tested a real OpenAI client-secret mint rather than relying on documentation defaults; the live API defaulted to roughly 10 minutes, so the endpoint now explicitly requests the supported 10-second minimum and an automated check confirms the returned lifetime without printing the token.

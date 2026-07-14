@@ -36,19 +36,23 @@ export async function POST(request: Request) {
         "Content-Type": "application/json",
         "OpenAI-Safety-Identifier": hashClientIp(request),
       },
-      body: JSON.stringify({ session: {
-        type: "realtime",
-        model: MODELS.realtime,
-        output_modalities: ["audio"],
-        instructions,
-        audio: {
-          input: {
-            transcription: { model: "gpt-realtime-whisper" },
-            turn_detection: { type: "semantic_vad", create_response: false, interrupt_response: false },
+      body: JSON.stringify({
+        // DECISION: Explicitly request OpenAI's 10-second minimum instead of the current 10-minute default.
+        expires_after: { anchor: "created_at", seconds: 10 },
+        session: {
+          type: "realtime",
+          model: MODELS.realtime,
+          output_modalities: ["audio"],
+          instructions,
+          audio: {
+            input: {
+              transcription: { model: "gpt-realtime-whisper" },
+              turn_detection: { type: "semantic_vad", create_response: false, interrupt_response: false },
+            },
+            output: { voice: "marin" },
           },
-          output: { voice: "marin" },
         },
-      }}),
+      }),
     });
     if (!response.ok) return NextResponse.json({ error: "Realtime token could not be created." }, { status: 502 });
     const token = tokenSchema.parse(await response.json());
