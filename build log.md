@@ -300,3 +300,15 @@ Decisions and outcomes:
 - Treated the confirmation as authorization to run the database-backed production acceptance suite: the sixth same-IP viva and token attempts were refused, while oversized judge sessions were clamped to 150 seconds.
 - Ran the typed judge flow in the browser through two schema-gated examiner decisions and dossier generation, then verified the new zero-finding dossier appeared in the findings-sorted teacher triage view and that the landing flow remained usable at a 390-by-844 phone viewport.
 - Tested a real OpenAI client-secret mint rather than relying on documentation defaults; the live API defaulted to roughly 10 minutes, so the endpoint now explicitly requests the supported 10-second minimum and an automated check confirms the returned lifetime without printing the token.
+
+## 23 — Repair voice turn control and clarify follow-ups
+
+Prompt:
+
+> So a few things, I got this error: The WebRTC voice connection failed. And I also think there should be a button that allows the student to end their turn, so the examiner can move on to their next question. Do we allow the examiner to ask follow ups?
+
+Decisions and outcomes:
+
+- Confirmed production Supabase health and matched the ephemeral-token SDP exchange to OpenAI's current WebRTC guidance, then added peer/ICE-state diagnostics, a 15-second connection timeout, and Safari-safe remote-audio playback instead of leaving the generic failure opaque.
+- Replaced semantic pause detection with an explicit `Finish answer` control: VAD is disabled, the microphone is muted while questions play, each answer buffer is cleared before listening, and the student's button press commits exactly one answer for transcription.
+- Preserved examiner-owned follow-ups: `action: probe` asks a claim-specific follow-up on the same claim, while schema validation prevents the voice model from inventing or rerouting questions. The updated manual-turn session minted a real 11-second client token; all 18 tests, TypeScript, the production build, and the client-secret bundle scan pass.

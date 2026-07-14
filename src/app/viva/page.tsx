@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ClaimGraph, ClaimGraphNode } from "@/lib/claim-graph";
 import type { DecisionLogEntry } from "@/lib/decision-log";
 import type { ExaminerResult } from "@/lib/examiner";
+import { realtimeAudioInputEvent, webRtcFailureMessage } from "@/lib/realtime-control";
 import { formatElapsed, type TranscriptTurn } from "@/lib/scripted-viva";
 import {
   DEAD_AIR_LIMIT_MS,
@@ -58,6 +59,7 @@ export default function VivaPage() {
   const lastCompletedTranscript = useRef<{ text: string; at: number } | null>(null);
   const evaluationFailure = useRef<Error | null>(null);
   const ending = useRef(false);
+  const connectionTimer = useRef<number | null>(null);
 
   useEffect(() => {
     const raw = sessionStorage.getItem("eleza:viva-handoff");
@@ -107,6 +109,8 @@ export default function VivaPage() {
   }
 
   function stopTransport() {
+    if (connectionTimer.current !== null) window.clearTimeout(connectionTimer.current);
+    connectionTimer.current = null;
     channel.current?.close();
     peer.current?.close();
     microphone.current?.getTracks().forEach((track) => track.stop());
@@ -132,10 +136,43 @@ export default function VivaPage() {
     if (delay > DEAD_AIR_LIMIT_MS) setStallCount((current) => current + 1);
   }
 
+  function setMicrophoneEnabled(enabled: boolean) {
+    microphone.current?.getAudioTracks().forEach((track) => { track.enabled = enabled; });
+  }
+
+  function sendRealtimeInputEvent(type: "input_audio_buffer.clear" | "input_audio_buffer.commit") {
+    if (channel.current?.readyState !== "open") throw new Error("Realtime control channel is not open.");
+    channel.current.send(JSON.stringify(realtimeAudioInputEvent(type)));
+  }
+
+  function prepareVoiceAnswer() {
+    try {
+      sendRealtimeInputEvent("input_audio_buffer.clear");
+      setMicrophoneEnabled(true);
+      setError("");
+      setPhase("listening");
+    } catch (cause) {
+      fail(cause);
+    }
+  }
+
+  function finishVoiceAnswer() {
+    if (status !== "live" || phase !== "listening") return;
+    try {
+      setMicrophoneEnabled(false);
+      setPhase("thinking");
+      // DECISION: an explicit commit makes a student's button press—not a pause detector—the answer boundary.
+      sendRealtimeInputEvent("input_audio_buffer.commit");
+    } catch (cause) {
+      fail(cause);
+    }
+  }
+
   function speakQuestion(question: VivaQuestion, answerCompletedAt?: number) {
     if (channel.current?.readyState !== "open") throw new Error("Realtime control channel is not open.");
     if (!voiceQuestionTemplate.current) throw new Error("Realtime question delivery template is not loaded.");
     activeQuestion.current = question;
+    setMicrophoneEnabled(false);
     if (answerCompletedAt !== undefined) awaitingAudioSince.current = answerCompletedAt;
     setPhase("speaking");
     // DECISION: an empty input plus one externally routed question prevents the voice model from freelancing.
@@ -266,7 +303,8 @@ export default function VivaPage() {
         const question = activeQuestion.current;
         appendTurn("examiner", String(message.transcript ?? question?.text ?? ""), question ?? undefined);
         setDraft(null);
-        setPhase("listening");
+      } else if (type === "response.output_audio.done") {
+        prepareVoiceAnswer();
       } else if (type === "conversation.item.input_audio_transcription.delta") {
         const delta = String(message.delta ?? "");
         setDraft((current) => ({ speaker: "student", text: current?.speaker === "student" ? current.text + delta : delta }));
@@ -279,11 +317,24 @@ export default function VivaPage() {
         if ((itemId && completedTranscriptions.current.has(itemId)) || repeatedWithoutId) return;
         if (itemId) completedTranscriptions.current.add(itemId);
         lastCompletedTranscript.current = { text: transcript, at: now };
-        handleCompletedAnswer(transcript);
-      } else if (type === "input_audio_buffer.speech_started") {
-        setPhase("listening");
+        if (transcript) {
+          handleCompletedAnswer(transcript);
+        } else {
+          setDraft(null);
+          setError("No speech was captured. Speak your answer, then press Finish answer again.");
+          setMicrophoneEnabled(true);
+          setPhase("listening");
+        }
       } else if (type === "error") {
-        fail(new Error(JSON.stringify(message.error ?? message)));
+        const realtimeError = message.error as Record<string, unknown> | undefined;
+        const errorText = String(realtimeError?.message ?? JSON.stringify(realtimeError ?? message));
+        if (/audio buffer|buffer.*small|buffer.*empty/i.test(errorText)) {
+          setError("No speech was captured. Speak your answer, then press Finish answer again.");
+          setMicrophoneEnabled(true);
+          setPhase("listening");
+          return;
+        }
+        fail(new Error(errorText));
       }
     } catch (cause) {
       fail(cause);
@@ -348,23 +399,42 @@ export default function VivaPage() {
       const pc = new RTCPeerConnection();
       const audio = document.createElement("audio");
       audio.autoplay = true;
-      pc.ontrack = (received) => { audio.srcObject = received.streams[0]; };
+      audio.setAttribute("playsinline", "true");
+      audio.style.display = "none";
+      document.body.appendChild(audio);
+      pc.ontrack = (received) => {
+        // DECISION: Safari can omit event streams, so retain the track in a fallback MediaStream and explicitly start playback.
+        audio.srcObject = received.streams[0] ?? new MediaStream([received.track]);
+        void audio.play().catch(() => setError("Voice connected, but the browser blocked audio playback. Tap the page, then retry."));
+      };
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getAudioTracks().forEach((track) => { track.enabled = false; });
       stream.getTracks().forEach((track) => pc.addTrack(track, stream));
       const dataChannel = pc.createDataChannel("oai-events");
       dataChannel.addEventListener("message", handleRealtimeEvent);
       dataChannel.addEventListener("open", () => {
+        if (connectionTimer.current !== null) window.clearTimeout(connectionTimer.current);
+        connectionTimer.current = null;
         startedAt.current = Date.now();
         setStatus("live");
         try { deliverQuestion(pipeline.current!.opening()); } catch (cause) { fail(cause); }
       });
+      dataChannel.addEventListener("error", () => {
+        fail(new Error(webRtcFailureMessage(pc.connectionState, pc.iceConnectionState)));
+      });
       pc.addEventListener("connectionstatechange", () => {
-        if (pc.connectionState === "failed") fail(new Error("The WebRTC voice connection failed."));
+        if (pc.connectionState === "failed") fail(new Error(webRtcFailureMessage(pc.connectionState, pc.iceConnectionState)));
+      });
+      pc.addEventListener("iceconnectionstatechange", () => {
+        if (pc.iceConnectionState === "failed") fail(new Error(webRtcFailureMessage(pc.connectionState, pc.iceConnectionState)));
       });
       peer.current = pc;
       channel.current = dataChannel;
       microphone.current = stream;
       remoteAudio.current = audio;
+      connectionTimer.current = window.setTimeout(() => {
+        if (dataChannel.readyState !== "open") fail(new Error(webRtcFailureMessage(pc.connectionState, pc.iceConnectionState)));
+      }, 15_000);
 
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
@@ -439,7 +509,7 @@ export default function VivaPage() {
     <main className="viva-main viva-reasoning-layout">
       <section className="transcript-column">
         <p className="column-label">TRANSCRIPT</p>
-        {turns.length === 0 && <div className="viva-ready-copy"><h1>{handoff.practice ? "Warm up first." : "Defend the argument."}</h1><p>The AI examiner asks only questions tied to this essay’s parsed claims. Answer {isTextMode ? "in the text box" : "out loud"}; the session ends automatically after {durationMinutes} minutes.</p><p className="viva-start-disclosure">AI INTERACTION · {handoff.practice ? "UNRECORDED PRACTICE" : "TRANSCRIPT AND ROUTING RECEIPTS RECORDED"}</p><button onClick={startLiveSession} disabled={status === "connecting"}>{status === "connecting" ? "Connecting…" : `Start ${durationMinutes}-minute ${handoff.practice ? "warm-up" : "viva"}`}</button></div>}
+        {turns.length === 0 && <div className="viva-ready-copy"><h1>{handoff.practice ? "Warm up first." : "Defend the argument."}</h1><p>The AI examiner asks only questions tied to this essay’s parsed claims. {isTextMode ? "Type each answer and send it when complete." : "Answer out loud, then press Finish answer when you are done."} The session ends automatically after {durationMinutes} minutes.</p><p className="viva-start-disclosure">AI INTERACTION · {handoff.practice ? "UNRECORDED PRACTICE" : "TRANSCRIPT AND ROUTING RECEIPTS RECORDED"}</p><button onClick={startLiveSession} disabled={status === "connecting"}>{status === "connecting" ? "Connecting…" : `Start ${durationMinutes}-minute ${handoff.practice ? "warm-up" : "viva"}`}</button></div>}
         {turns.map((turn) => <article className={`transcript-turn ${turn.speaker}`} key={turn.id}>
           <time>{formatElapsed(turn.elapsedMs)}</time><div><small>{turn.speaker.toUpperCase()}{turn.targetClaimId ? ` · ${turn.targetClaimId}${turn.questionKind === "bridge" ? " · BRIDGE" : ""}` : ""}</small><p>{turn.text}</p></div>
         </article>)}
@@ -465,6 +535,6 @@ export default function VivaPage() {
     </main>
 
     {error && <p className="viva-error" role="alert">{error}</p>}
-    <footer className="viva-controls"><div><span className={phase === "listening" && status === "live" ? "active" : ""}>{isTextMode ? "ANSWERING" : "LISTENING"}</span><i /><span className={phase === "speaking" && status === "live" ? "active" : ""}>{isTextMode ? "QUESTION" : "SPEAKING"}</span><i /><span className={phase === "thinking" && status === "live" ? "active" : ""}>THINKING</span></div><div className="viva-health"><span>{health}</span>{status === "live" && <button onClick={() => void endViva()}>End {handoff.practice ? "warm-up" : "viva"} early</button>}</div></footer>
+    <footer className="viva-controls"><div><span className={phase === "listening" && status === "live" ? "active" : ""}>{isTextMode ? "ANSWERING" : "LISTENING"}</span><i /><span className={phase === "speaking" && status === "live" ? "active" : ""}>{isTextMode ? "QUESTION" : "SPEAKING"}</span><i /><span className={phase === "thinking" && status === "live" ? "active" : ""}>THINKING</span></div><div className="viva-health"><span>{health}</span>{status === "live" && !isTextMode && <button className="finish-answer-button" onClick={finishVoiceAnswer} disabled={phase !== "listening"}>Finish answer</button>}{status === "live" && <button onClick={() => void endViva()}>End {handoff.practice ? "warm-up" : "viva"} early</button>}</div></footer>
   </div>;
 }

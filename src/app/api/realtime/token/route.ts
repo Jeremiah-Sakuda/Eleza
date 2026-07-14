@@ -47,7 +47,8 @@ export async function POST(request: Request) {
           audio: {
             input: {
               transcription: { model: "gpt-realtime-whisper" },
-              turn_detection: { type: "semantic_vad", create_response: false, interrupt_response: false },
+              // DECISION: student-controlled commits preserve thoughtful pauses and define one examiner answer per explicit turn.
+              turn_detection: null,
             },
             output: { voice: "marin" },
           },
