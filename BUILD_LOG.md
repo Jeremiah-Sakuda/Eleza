@@ -466,3 +466,15 @@ Decisions and outcomes:
 - Added a 250–1,200-word paste path that invokes the standard Sol claim-graph engine, persists through the existing submission/graph tables, and requires at least four real claim nodes before exposing the existing rate-limited viva creation path. A real 537-word paste produced and persisted a 31-node graph in browser acceptance.
 - Took item 2's explicit removal path: the current `/inspect` implementation already contained no graph-edit control, and source plus browser verification confirmed no decorative “Looks wrong? Edit the graph” affordance remains. This avoids claiming an unimplemented teacher control or adding a rushed graph-version schema.
 - Added dependency-free A4 browser printing with visible evidence appendices, plus an HMAC-signed participant route over the existing dossier, transcript, and decision log. The link adds no parallel evidence state and practice remains unsaved and link-free; TypeScript, all 22 tests, production build, and the 32-asset client-secret scan pass.
+
+## 27 — Ship and verify the four participant-facing additions
+
+Prompt:
+
+> continue
+
+Decisions and outcomes:
+
+- Staged and committed only the feature, documentation, and test files, leaving the user's active `docs/eleza-prd.md`, `.DS_Store`, and `UI_design/` changes untouched; pushed commit `f425e1e` to `main`.
+- Waited until Vercel served the new landing bundle, then verified production health `200`, paste-flow copy, signed student dossier receipts and appendices, malformed-token `404`, and deployed A4 print rules.
+- Ran the live database limiter acceptance—attempt six was refused for sessions and Realtime tokens—then completed a production Sol paste extraction in 120 seconds with 33 nodes, 42 edges, 22 claim nodes, and persisted spans.
