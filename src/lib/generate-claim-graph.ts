@@ -15,7 +15,6 @@ export async function generateClaimGraph(sourceText: string): Promise<ClaimGraph
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const response = await openai.responses.create({
       model: MODELS.claimGraph,
-      temperature: 0,
       input: attempt === 0 ? prompt : `${prompt}\n\nYour first output did not contain six claim nodes. Re-extract with at least six distinct claim nodes.`,
       text: {
         format: {
