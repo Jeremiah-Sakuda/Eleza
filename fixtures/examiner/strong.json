@@ -1,0 +1,20 @@
+{
+  "name": "strong",
+  "expected_assessment": "strong",
+  "expected_action": "advance",
+  "input": {
+    "transcript_segment": "The vegetables matter, but the resilience mechanism is the network people build while sharing tools and schedules. During a disruption, those existing relationships let neighbors coordinate information and check on older residents quickly.",
+    "target_claim": { "id": "claim_resilience", "type": "claim", "label": "Gardens increase resilience by creating an organizing network.", "source_span": { "start": 903, "end": 987 } },
+    "graph": {
+      "nodes": [
+        { "id": "claim_thesis", "type": "claim", "label": "Community gardens should be permanent city infrastructure.", "source_span": { "start": 0, "end": 75 } },
+        { "id": "claim_resilience", "type": "claim", "label": "Gardens increase resilience by creating an organizing network.", "source_span": { "start": 903, "end": 987 } },
+        { "id": "evidence_storm", "type": "evidence", "label": "A storm showed that existing volunteers could coordinate neighbors.", "source_span": { "start": 988, "end": 1080 } }
+      ],
+      "edges": [
+        { "source": "claim_resilience", "target": "claim_thesis", "type": "supports" },
+        { "source": "evidence_storm", "target": "claim_resilience", "type": "supports" }
+      ]
+    }
+  }
+}

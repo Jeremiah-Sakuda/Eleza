@@ -1,0 +1,20 @@
+{
+  "name": "contradictory",
+  "expected_assessment": "contradictory",
+  "expected_action": "probe",
+  "input": {
+    "transcript_segment": "The garden only helped by supplying enough vegetables to replace the delayed store deliveries. The volunteer relationships were not important to the response.",
+    "target_claim": { "id": "claim_resilience", "type": "claim", "label": "Gardens increase resilience by creating an organizing network.", "source_span": { "start": 903, "end": 987 } },
+    "graph": {
+      "nodes": [
+        { "id": "claim_thesis", "type": "claim", "label": "Community gardens should be permanent city infrastructure.", "source_span": { "start": 0, "end": 75 } },
+        { "id": "claim_resilience", "type": "claim", "label": "Gardens increase resilience by creating an organizing network.", "source_span": { "start": 903, "end": 987 } },
+        { "id": "evidence_storm", "type": "evidence", "label": "A storm showed that existing volunteers could coordinate neighbors.", "source_span": { "start": 988, "end": 1080 } }
+      ],
+      "edges": [
+        { "source": "claim_resilience", "target": "claim_thesis", "type": "supports" },
+        { "source": "evidence_storm", "target": "claim_resilience", "type": "supports" }
+      ]
+    }
+  }
+}
