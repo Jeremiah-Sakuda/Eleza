@@ -32,6 +32,15 @@ export type Dossier = {
   durationMs: number;
 };
 
+export type TriageRow = {
+  dossierId: string;
+  studentLabel: string;
+  title: string;
+  durationMs: number;
+  findingCount: number;
+  completedAt: string;
+};
+
 export async function persistTranscript(sessionId: string, rawTurns: TranscriptTurnInput[]) {
   const turns = z.array(transcriptTurnSchema).parse(rawTurns);
   if (turns.length === 0) throw new Error("A completed viva must contain transcript turns.");
@@ -119,4 +128,40 @@ export async function loadDossier(id: string): Promise<Dossier> {
     completedAt: z.string().nullable().parse(sessionResult.data.completed_at),
     durationMs: transcript.reduce((maximum, turn) => Math.max(maximum, turn.elapsed_ms), 0),
   };
+}
+
+export async function listDossierTriage(): Promise<TriageRow[]> {
+  const supabase = serviceClient();
+  const dossiers = await supabase.from("dossiers")
+    .select("id, viva_session_id, analysis, created_at")
+    .order("created_at", { ascending: false })
+    .limit(100);
+  if (dossiers.error) throw new Error(`Could not load dossier triage: ${dossiers.error.message}`);
+  if (!dossiers.data.length) return [];
+  const sessionIds = dossiers.data.map((row) => z.string().uuid().parse(row.viva_session_id));
+  const [sessions, turns] = await Promise.all([
+    supabase.from("viva_sessions").select("id, title, completed_at").in("id", sessionIds),
+    supabase.from("transcript_turns").select("viva_session_id, elapsed_ms").in("viva_session_id", sessionIds),
+  ]);
+  if (sessions.error) throw new Error(`Could not load triage sessions: ${sessions.error.message}`);
+  if (turns.error) throw new Error(`Could not load triage durations: ${turns.error.message}`);
+  const sessionMap = new Map(sessions.data.map((session) => [session.id as string, session]));
+  const durations = new Map<string, number>();
+  for (const turn of turns.data) {
+    const sessionId = z.string().uuid().parse(turn.viva_session_id);
+    durations.set(sessionId, Math.max(durations.get(sessionId) ?? 0, z.number().int().nonnegative().parse(turn.elapsed_ms)));
+  }
+  return dossiers.data.map((row) => {
+    const sessionId = z.string().uuid().parse(row.viva_session_id);
+    const session = sessionMap.get(sessionId);
+    const analysis = divergenceAnalysisSchema.parse(row.analysis);
+    return {
+      dossierId: z.string().uuid().parse(row.id),
+      studentLabel: `V-${sessionId.slice(0, 4).toUpperCase()}`,
+      title: z.string().nullable().parse(session?.title ?? null) ?? "Argumentative submission",
+      durationMs: durations.get(sessionId) ?? 0,
+      findingCount: analysis.findings.length,
+      completedAt: z.string().nullable().parse(session?.completed_at ?? null) ?? z.string().parse(row.created_at),
+    };
+  }).sort((a, b) => b.findingCount - a.findingCount || b.completedAt.localeCompare(a.completedAt));
 }

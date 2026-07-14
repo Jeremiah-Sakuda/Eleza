@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { ClaimGraph, ClaimGraphNode } from "@/lib/claim-graph";
 import type { DecisionLogEntry } from "@/lib/decision-log";
+import type { ExaminerResult } from "@/lib/examiner";
 import { formatElapsed, type TranscriptTurn } from "@/lib/scripted-viva";
 import {
   DEAD_AIR_LIMIT_MS,
@@ -14,7 +15,15 @@ import {
 
 type SessionStatus = "loading" | "idle" | "connecting" | "live" | "ending" | "complete" | "error";
 type SessionPhase = "listening" | "speaking" | "thinking";
-type Handoff = { title: string; sourceText: string; graph: ClaimGraph; submissionId?: string };
+type Handoff = {
+  title: string;
+  sourceText: string;
+  graph: ClaimGraph;
+  submissionId?: string;
+  durationMs?: number;
+  deliveryMode?: "voice" | "text";
+  practice?: boolean;
+};
 type LiveTurn = TranscriptTurn & { targetClaimId?: string; questionKind?: VivaQuestion["kind"] };
 
 export default function VivaPage() {
@@ -29,6 +38,7 @@ export default function VivaPage() {
   const [maxDeadAirMs, setMaxDeadAirMs] = useState(0);
   const [stallCount, setStallCount] = useState(0);
   const [error, setError] = useState("");
+  const [typedAnswer, setTypedAnswer] = useState("");
 
   const startedAt = useRef(0);
   const turnsRef = useRef<LiveTurn[]>([]);
@@ -37,6 +47,7 @@ export default function VivaPage() {
   const activeQuestion = useRef<VivaQuestion | null>(null);
   const answerSequence = useRef(0);
   const vivaSessionId = useRef<string | null>(null);
+  const practiceSessionId = useRef("00000000-0000-4000-8000-000000000000");
   const peer = useRef<RTCPeerConnection | null>(null);
   const channel = useRef<RTCDataChannel | null>(null);
   const microphone = useRef<MediaStream | null>(null);
@@ -64,13 +75,14 @@ export default function VivaPage() {
 
   useEffect(() => {
     if (status !== "live") return;
+    const durationMs = handoff?.durationMs ?? VIVA_DURATION_MS;
     const timer = window.setInterval(() => {
       const next = Date.now() - startedAt.current;
-      setElapsedMs(Math.min(next, VIVA_DURATION_MS));
-      if (next >= VIVA_DURATION_MS) void endViva();
+      setElapsedMs(Math.min(next, durationMs));
+      if (next >= durationMs) void endViva();
     }, 250);
     return () => window.clearInterval(timer);
-  }, [status]);
+  }, [status, handoff]);
 
   useEffect(() => () => stopTransport(), []);
 
@@ -143,6 +155,16 @@ export default function VivaPage() {
     }));
   }
 
+  function deliverQuestion(question: VivaQuestion, answerCompletedAt?: number) {
+    activeQuestion.current = question;
+    if (handoff?.deliveryMode === "text") {
+      appendTurn("examiner", question.text, question);
+      setPhase("listening");
+      return;
+    }
+    speakQuestion(question, answerCompletedAt);
+  }
+
   function targetClaimFor(question: VivaQuestion): ClaimGraphNode {
     const target = handoff?.graph.nodes.find((node) => node.id === question.targetClaimId && node.type === "claim");
     if (!target) throw new Error(`Question ${question.id} lost its claim trace.`);
@@ -150,13 +172,17 @@ export default function VivaPage() {
   }
 
   async function evaluateCompletedAnswer(question: VivaQuestion, transcript: string, sequence: number, answeredAtMs: number) {
-    if (!handoff || !vivaSessionId.current) throw new Error("The viva session is not ready for examiner decisions.");
+    if (!handoff || (!handoff.practice && !vivaSessionId.current)) throw new Error("The viva session is not ready for examiner decisions.");
     try {
       setPendingDecisions((count) => count + 1);
-      const response = await fetch("/api/viva/turn", {
+      const response = await fetch(handoff.practice ? "/api/examiner" : "/api/viva/turn", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        body: JSON.stringify(handoff.practice ? {
+          transcript_segment: transcript,
+          target_claim: targetClaimFor(question),
+          graph: handoff.graph,
+        } : {
           session_id: vivaSessionId.current,
           sequence,
           answered_at_ms: answeredAtMs,
@@ -165,10 +191,32 @@ export default function VivaPage() {
           graph: handoff.graph,
         }),
       });
-      const result = await response.json() as { entry?: DecisionLogEntry; error?: string };
-      if (!response.ok || !result.entry) throw new Error(result.error || "The examiner did not return a persisted decision.");
-      pipeline.current?.acceptDecision(result.entry, sequence);
-      setDecisionLog((current) => [...current, result.entry as DecisionLogEntry].sort((a, b) => a.sequence - b.sequence));
+      const result = await response.json() as { entry?: DecisionLogEntry; error?: string } & Partial<ExaminerResult>;
+      if (!response.ok) throw new Error(result.error || "The examiner did not return a decision.");
+      let entry = result.entry;
+      if (handoff.practice) {
+        if (!result.answer_summary || !result.target_claim_id || !result.assessment || !result.action || !result.next_claim_id || !result.next_question || !result.rationale || result.quality_gate?.status !== "passed") {
+          throw new Error("The practice examiner did not return a receipt-gated decision.");
+        }
+        entry = {
+          id: crypto.randomUUID(),
+          viva_session_id: practiceSessionId.current,
+          sequence,
+          transcript_segment: transcript,
+          answered_at_ms: answeredAtMs,
+          answer_summary: result.answer_summary,
+          target_claim_id: result.target_claim_id,
+          assessment: result.assessment,
+          action: result.action,
+          next_claim_id: result.next_claim_id,
+          next_question: result.next_question,
+          rationale: result.rationale,
+          created_at: new Date().toISOString(),
+        };
+      }
+      if (!entry) throw new Error("The examiner did not return a persisted decision.");
+      pipeline.current?.acceptDecision(entry, sequence);
+      setDecisionLog((current) => [...current, entry].sort((a, b) => a.sequence - b.sequence));
     } catch (cause) {
       evaluationFailure.current = cause instanceof Error ? cause : new Error("An examiner decision failed.");
       fail(cause);
@@ -194,7 +242,15 @@ export default function VivaPage() {
     void task.finally(() => pending.current.delete(task));
     const answerCompletedAt = performance.now();
     const immediateQuestion = pipeline.current.nextImmediate();
-    speakQuestion(immediateQuestion, answerCompletedAt);
+    deliverQuestion(immediateQuestion, answerCompletedAt);
+  }
+
+  function submitTypedAnswer(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const answer = typedAnswer.trim();
+    if (!answer) return;
+    setTypedAnswer("");
+    handleCompletedAnswer(answer);
   }
 
   function handleRealtimeEvent(event: MessageEvent<string>) {
@@ -245,15 +301,41 @@ export default function VivaPage() {
     setMaxDeadAirMs(0);
     setStallCount(0);
     setError("");
+    setTypedAnswer("");
     setStatus("connecting");
     answerSequence.current = 0;
     completedTranscriptions.current.clear();
     lastCompletedTranscript.current = null;
     evaluationFailure.current = null;
     ending.current = false;
+    vivaSessionId.current = null;
+    practiceSessionId.current = crypto.randomUUID();
     pipeline.current = new VivaQuestionPipeline(handoff.graph);
 
     try {
+      if (!handoff.practice) {
+        const sessionResponse = await fetch("/api/viva/sessions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            graph: handoff.graph,
+            submissionId: handoff.submissionId,
+            sourceText: handoff.sourceText,
+            title: handoff.title,
+          }),
+        });
+        const session = await sessionResponse.json() as { id?: string; error?: string };
+        if (!sessionResponse.ok || !session.id) throw new Error(session.error || "Could not create the decision log.");
+        vivaSessionId.current = session.id;
+      }
+
+      if (handoff.deliveryMode === "text") {
+        startedAt.current = Date.now();
+        setStatus("live");
+        deliverQuestion(pipeline.current.opening());
+        return;
+      }
+
       if (!voiceQuestionTemplate.current) {
         const templateResponse = await fetch("/api/realtime/question-template");
         const templateResult = await templateResponse.json() as { template?: string; error?: string };
@@ -262,19 +344,6 @@ export default function VivaPage() {
         }
         voiceQuestionTemplate.current = templateResult.template;
       }
-      const sessionResponse = await fetch("/api/viva/sessions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          graph: handoff.graph,
-          submissionId: handoff.submissionId,
-          sourceText: handoff.sourceText,
-          title: handoff.title,
-        }),
-      });
-      const session = await sessionResponse.json() as { id?: string; error?: string };
-      if (!sessionResponse.ok || !session.id) throw new Error(session.error || "Could not create the decision log.");
-      vivaSessionId.current = session.id;
 
       const pc = new RTCPeerConnection();
       const audio = document.createElement("audio");
@@ -287,7 +356,7 @@ export default function VivaPage() {
       dataChannel.addEventListener("open", () => {
         startedAt.current = Date.now();
         setStatus("live");
-        try { speakQuestion(pipeline.current!.opening()); } catch (cause) { fail(cause); }
+        try { deliverQuestion(pipeline.current!.opening()); } catch (cause) { fail(cause); }
       });
       pc.addEventListener("connectionstatechange", () => {
         if (pc.connectionState === "failed") fail(new Error("The WebRTC voice connection failed."));
@@ -315,11 +384,16 @@ export default function VivaPage() {
     if (ending.current || status === "complete" || status === "idle") return;
     ending.current = true;
     setStatus("ending");
-    setElapsedMs((current) => Math.min(Math.max(current, Date.now() - startedAt.current), VIVA_DURATION_MS));
+    const durationMs = handoff?.durationMs ?? VIVA_DURATION_MS;
+    setElapsedMs((current) => Math.min(Math.max(current, Date.now() - startedAt.current), durationMs));
     stopTransport();
     await Promise.allSettled([...pending.current]);
     try {
       if (evaluationFailure.current) throw evaluationFailure.current;
+      if (handoff?.practice) {
+        setStatus("complete");
+        return;
+      }
       if (vivaSessionId.current) {
         const response = await fetch(`/api/viva/sessions/${vivaSessionId.current}/complete`, {
           method: "POST",
@@ -343,21 +417,28 @@ export default function VivaPage() {
   if (!handoff) return <div className="viva-empty"><span className="wordmark">ELEZA</span><h1>No claim graph is loaded.</h1><p>Parse the fixture essay first, then proceed from its inspection view.</p><a href="/">Return to submission</a></div>;
 
   const label = status === "live" ? "LIVE" : status === "connecting" ? "CONNECTING" : status === "ending" ? "ENDING" : status === "complete" ? "ENDED" : "READY";
-  const health = stallCount === 0 ? `${Math.round(maxDeadAirMs)} ms max handoff` : `${stallCount} handoff${stallCount === 1 ? "" : "s"} over 2s`;
+  const durationMinutes = Math.round((handoff.durationMs ?? VIVA_DURATION_MS) / 60_000);
+  const isTextMode = handoff.deliveryMode === "text";
+  const health = isTextMode ? "typed-answer mode" : stallCount === 0 ? `${Math.round(maxDeadAirMs)} ms max handoff` : `${stallCount} handoff${stallCount === 1 ? "" : "s"} over 2s`;
 
   return <div className="viva-shell">
     <nav className="viva-nav"><div><span className="wordmark">ELEZA</span><i /><span className="mast-title">{handoff.title}</span></div><div className="viva-clock"><span className={`live-dot ${status === "live" ? "active" : ""}`} />{label}<b>{formatElapsed(elapsedMs)}</b></div></nav>
-    <div className="viva-disclosure">You’re speaking with an AI examiner. Everything is logged and shown.</div>
+    <div className="viva-disclosure">You’re interacting with an AI examiner. {handoff.practice ? "This warm-up is not recorded or saved." : "Your transcript and examiner decisions are recorded and shown in your dossier."}</div>
 
     <main className="viva-main viva-reasoning-layout">
       <section className="transcript-column">
         <p className="column-label">TRANSCRIPT</p>
-        {turns.length === 0 && <div className="viva-ready-copy"><h1>Defend the argument.</h1><p>The examiner will ask questions tied to the parsed claim graph. The session ends after five minutes.</p><button onClick={startLiveSession} disabled={status === "connecting"}>Start five-minute viva</button></div>}
+        {turns.length === 0 && <div className="viva-ready-copy"><h1>{handoff.practice ? "Warm up first." : "Defend the argument."}</h1><p>The AI examiner asks only questions tied to this essay’s parsed claims. Answer {isTextMode ? "in the text box" : "out loud"}; the session ends automatically after {durationMinutes} minutes.</p><p className="viva-start-disclosure">AI INTERACTION · {handoff.practice ? "UNRECORDED PRACTICE" : "TRANSCRIPT AND ROUTING RECEIPTS RECORDED"}</p><button onClick={startLiveSession} disabled={status === "connecting"}>{status === "connecting" ? "Connecting…" : `Start ${durationMinutes}-minute ${handoff.practice ? "warm-up" : "viva"}`}</button></div>}
         {turns.map((turn) => <article className={`transcript-turn ${turn.speaker}`} key={turn.id}>
           <time>{formatElapsed(turn.elapsedMs)}</time><div><small>{turn.speaker.toUpperCase()}{turn.targetClaimId ? ` · ${turn.targetClaimId}${turn.questionKind === "bridge" ? " · BRIDGE" : ""}` : ""}</small><p>{turn.text}</p></div>
         </article>)}
         {draft && <article className={`transcript-turn ${draft.speaker} draft`}><time>LIVE</time><div><small>{draft.speaker.toUpperCase()}</small><p>{draft.text}</p></div></article>}
-        {status === "complete" && <div className="viva-complete-rule">Viva complete. {decisionLog.length} examiner decisions recorded.</div>}
+        {isTextMode && status === "live" && <form className="typed-answer-form" onSubmit={submitTypedAnswer}>
+          <label htmlFor="typed-answer">Your answer</label>
+          <textarea id="typed-answer" value={typedAnswer} onChange={(event) => setTypedAnswer(event.target.value)} placeholder="Explain the claim in your own words…" rows={4} autoFocus />
+          <button type="submit" disabled={!typedAnswer.trim()}>Send answer</button>
+        </form>}
+        {status === "complete" && <div className="viva-complete-rule">{handoff.practice ? <>Warm-up complete. Nothing from this session was saved. <a href="/">Return to the judge demo</a>.</> : <>Viva complete. {decisionLog.length} examiner decisions recorded.</>}</div>}
       </section>
 
       <aside className="reasoning-pane">
@@ -373,6 +454,6 @@ export default function VivaPage() {
     </main>
 
     {error && <p className="viva-error" role="alert">{error}</p>}
-    <footer className="viva-controls"><div><span className={phase === "listening" && status === "live" ? "active" : ""}>LISTENING</span><i /><span className={phase === "speaking" && status === "live" ? "active" : ""}>SPEAKING</span><i /><span className={phase === "thinking" && status === "live" ? "active" : ""}>THINKING</span></div><div className="viva-health"><span>{health}</span>{status === "live" && <button onClick={() => void endViva()}>End viva early</button>}</div></footer>
+    <footer className="viva-controls"><div><span className={phase === "listening" && status === "live" ? "active" : ""}>{isTextMode ? "ANSWERING" : "LISTENING"}</span><i /><span className={phase === "speaking" && status === "live" ? "active" : ""}>{isTextMode ? "QUESTION" : "SPEAKING"}</span><i /><span className={phase === "thinking" && status === "live" ? "active" : ""}>THINKING</span></div><div className="viva-health"><span>{health}</span>{status === "live" && <button onClick={() => void endViva()}>End {handoff.practice ? "warm-up" : "viva"} early</button>}</div></footer>
   </div>;
 }

@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { NextResponse } from "next/server";
 import { MODELS } from "@/lib/models";
+import { hashClientIp } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -35,7 +36,10 @@ export async function POST(request: Request) {
 
   const response = await fetch("https://api.openai.com/v1/realtime/calls", {
     method: "POST",
-    headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
+    headers: {
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      "OpenAI-Safety-Identifier": hashClientIp(request),
+    },
     body: form,
   });
   const body = await response.text();
