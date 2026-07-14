@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
-import { examineAnswer, evaluateRationale, type ExaminerDecision, type ExaminerInput } from "../src/lib/examiner";
+import { examineAnswer, evaluateRationale, evaluateRouting, type ExaminerDecision, type ExaminerInput } from "../src/lib/examiner";
 
 type Fixture = {
   name: string;
@@ -37,6 +37,7 @@ for (const fixtureName of fixtureNames) {
             target_claim_id: fixture.input.target_claim.id,
             assessment: fixture.expected_assessment,
             action: fixture.expected_action,
+            next_claim_id: fixture.expected_action === "advance" ? "claim_thesis" : fixture.input.target_claim.id,
             next_question: "Can you explain the mechanism more directly?",
             rationale: `${fixture.input.target_claim.id}: the answer was vague.`,
           };
@@ -48,6 +49,7 @@ for (const fixtureName of fixtureNames) {
           target_claim_id: fixture.input.target_claim.id,
           assessment: fixture.expected_assessment,
           action: fixture.expected_action,
+          next_claim_id: fixture.expected_action === "advance" ? "claim_thesis" : fixture.input.target_claim.id,
           next_question: fixture.expected_action === "advance" ? "How does the next claim support the thesis?" : "What mechanism connects the garden to resilience?",
           rationale: `${fixture.input.target_claim.id} is assessed as ${fixture.expected_assessment} because the answer says "${quote}", which directly shows the content available for this claim.`,
         };
@@ -58,6 +60,7 @@ for (const fixtureName of fixtureNames) {
     assert.equal(result.action, fixture.expected_action);
     assert.equal(result.quality_gate.status, "passed");
     assert.deepEqual(evaluateRationale(result, fixture.input), []);
+    assert.deepEqual(evaluateRouting(result, fixture.input), []);
     assert.equal(result.quality_gate.attempts, fixtureName === "strong" ? 1 : 2);
   });
 }
@@ -70,6 +73,7 @@ test("examiner flags output after two rationale-gate retries", async () => {
       target_claim_id: fixture.input.target_claim.id,
       assessment: "unsupported",
       action: "probe",
+      next_claim_id: fixture.input.target_claim.id,
       next_question: "Please explain the mechanism.",
       rationale: "The answer was vague.",
     }),

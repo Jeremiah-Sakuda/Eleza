@@ -14,6 +14,7 @@ Return only the requested structured output.
 - `probe`: stay on the target claim and ask for the missing mechanism, evidence, or reconciliation.
 - `branch`: move to a connected claim when the answer exposes a relevant dependency or contradiction.
 - `advance`: move to the next claim only when the current claim has been adequately reconstructed.
+- `next_claim_id` is the claim node targeted by `next_question`. For `probe`, it must equal `target_claim_id`. For `branch`, it must be directly connected to the target in the graph. For `advance`, select another claim node that logically follows.
 
 ## Rationale receipt — mandatory
 

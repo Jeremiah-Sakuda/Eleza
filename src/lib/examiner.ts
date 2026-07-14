@@ -4,17 +4,11 @@ import OpenAI from "openai";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { claimGraphSchema, graphNodeSchema } from "@/lib/claim-graph";
+import { examinerDecisionSchema, type ExaminerDecision } from "@/lib/examiner-schema";
 import { MODELS } from "@/lib/models";
 
-export const assessmentSchema = z.enum(["strong", "partial", "unsupported", "contradictory", "off_topic"]);
-export const examinerDecisionSchema = z.object({
-  answer_summary: z.string().min(5).max(300),
-  target_claim_id: z.string(),
-  assessment: assessmentSchema,
-  action: z.enum(["probe", "branch", "advance"]),
-  next_question: z.string().min(5).max(400),
-  rationale: z.string().min(20).max(800),
-});
+export { assessmentSchema, examinerDecisionSchema } from "@/lib/examiner-schema";
+export type { ExaminerDecision } from "@/lib/examiner-schema";
 
 export const examinerInputSchema = z.object({
   transcript_segment: z.string().min(1),
@@ -22,7 +16,6 @@ export const examinerInputSchema = z.object({
   graph: claimGraphSchema,
 });
 
-export type ExaminerDecision = z.infer<typeof examinerDecisionSchema>;
 export type ExaminerInput = z.infer<typeof examinerInputSchema>;
 export type RationaleGate = {
   status: "passed" | "flagged";
@@ -52,9 +45,28 @@ export function evaluateRationale(decision: ExaminerDecision, input: ExaminerInp
   return failures;
 }
 
+export function evaluateRouting(decision: ExaminerDecision, input: ExaminerInput): string[] {
+  const failures: string[] = [];
+  const claimIds = new Set(input.graph.nodes.filter((node) => node.type === "claim").map((node) => node.id));
+  if (!claimIds.has(decision.next_claim_id)) failures.push(`Next question must target a claim node; ${decision.next_claim_id} is not one.`);
+  if (decision.action === "probe" && decision.next_claim_id !== input.target_claim.id) {
+    failures.push("A probe must remain on the current target claim.");
+  }
+  if (decision.action === "advance" && claimIds.size > 1 && decision.next_claim_id === input.target_claim.id) {
+    failures.push("An advance must move to another claim node.");
+  }
+  if (decision.action === "branch") {
+    const connected = input.graph.edges.some((edge) =>
+      (edge.source === input.target_claim.id && edge.target === decision.next_claim_id)
+      || (edge.target === input.target_claim.id && edge.source === decision.next_claim_id));
+    if (!connected) failures.push("A branch must target a graph node directly connected to the current claim.");
+  }
+  return failures;
+}
+
 function gatedDecisionSchema(input: ExaminerInput) {
   return examinerDecisionSchema.superRefine((decision, context) => {
-    for (const failure of evaluateRationale(decision, input)) {
+    for (const failure of [...evaluateRationale(decision, input), ...evaluateRouting(decision, input)]) {
       context.addIssue({ code: z.ZodIssueCode.custom, path: ["rationale"], message: failure });
     }
   });
@@ -91,7 +103,8 @@ export async function examineAnswer(
     if (gated.success) {
       return { ...gated.data, quality_gate: { status: "passed", attempts: attempt + 1, failures } };
     }
-    failures.push(...evaluateRationale(candidate.data, input).map((failure) => `Attempt ${attempt + 1}: ${failure}`));
+    failures.push(...[...evaluateRationale(candidate.data, input), ...evaluateRouting(candidate.data, input)]
+      .map((failure) => `Attempt ${attempt + 1}: ${failure}`));
   }
 
   if (!lastDecision) throw new Error("Examiner failed to return structured output after all attempts.");

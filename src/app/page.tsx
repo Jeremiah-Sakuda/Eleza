@@ -3,7 +3,11 @@
 import { useRef, useState } from "react";
 import type { ClaimGraph, ClaimGraphNode } from "@/lib/claim-graph";
 
-type Result = { sourceText: string; graph: ClaimGraph; persistence: { persisted: boolean } };
+type Result = {
+  sourceText: string;
+  graph: ClaimGraph;
+  persistence: { persisted: boolean; submissionId?: string; graphId?: string };
+};
 
 const colors = { claim: "#3455db", evidence: "#16836d", citation: "#9b5f18" };
 
@@ -34,6 +38,17 @@ export default function Home() {
     setFile(sample); await generate(sample);
   }
 
+  function proceedToViva() {
+    if (!result) return;
+    sessionStorage.setItem("eleza:viva-handoff", JSON.stringify({
+      title: file?.name.replace(/\.(txt|pdf)$/i, "") ?? "Argumentative submission",
+      sourceText: result.sourceText,
+      graph: result.graph,
+      submissionId: result.persistence.submissionId,
+    }));
+    window.location.assign("/viva");
+  }
+
   return <><nav className="masthead"><div><span className="wordmark">ELEZA</span><i /><span className="mast-title">Claim graph inspection</span></div><span className="stage">PRE-VIVA</span></nav><main>
     <header><p className="eyebrow">SUBMISSION / ARGUMENT MAP</p><h1>Inspect the argument<br />before the conversation.</h1><p className="lede">Upload an argumentative submission. Eleza maps claims to the exact document spans that will anchor its oral defense.</p></header>
     <section className="upload" aria-label="Submission upload">
@@ -42,6 +57,7 @@ export default function Home() {
       <button className="quiet" disabled={loading} onClick={useFixture}>Use synthetic sample</button>
     </section>
     {error && <p className="error" role="alert">{error}</p>}
+    {result && <div className="phase-toolbar"><span>{result.graph.nodes.length} nodes</span><span>{result.graph.edges.length} edges</span><button onClick={proceedToViva}>Proceed to live viva</button></div>}
     {result && <section className="workspace">
       <div className="panel graph-panel"><div className="panel-heading"><div><p className="eyebrow">CLAIM GRAPH</p><h2>{result.graph.nodes.filter((node) => node.type === "claim").length} claims · {result.graph.nodes.length} anchored nodes</h2></div><span className="status">{result.persistence.persisted ? "Saved" : "Local demo"}</span></div>
         <Graph graph={result.graph} selectedId={selected?.id} onSelect={setSelected} />
