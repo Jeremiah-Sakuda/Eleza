@@ -186,3 +186,15 @@ Decisions and outcomes:
 - Created this root-level, chronological, append-only build log and reconstructed every user prompt in the primary task so far.
 - Limited each entry to the 2–3 decisions or outcomes most useful for the README build narrative, including blockers and interrupted work rather than implying completion.
 - Added the logging requirement to `Agents.md` so future Codex work appends to this file after every prompt.
+
+## 15 — Identify the remaining manual work
+
+Prompt:
+
+> What do I need to do by hand?
+
+Decisions and outcomes:
+
+- Reduced the immediate manual blocker to one action: apply `supabase/migrations/002_live_viva.sql` in the configured Supabase project's SQL Editor.
+- Kept the real-provider verification, database readback, automated tests, build, commits, and eventual push as Codex-owned work after the migration is applied.
+- Identified the final microphone acceptance as necessarily human-operated: grant browser microphone permission and speak through the live viva while its measured handoff latency and reasoning pane are observed.
