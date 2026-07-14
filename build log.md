@@ -244,3 +244,15 @@ Decisions and outcomes:
 - Restricted divergence output in both the prompt and strict Zod schema to `cannot_reconstruct`, `mechanism_gap`, and `inconsistency`, then added semantic receipt validation for exact claim IDs, timestamps, answer excerpts, assessment support, and graph-owned source spans.
 - Kept raw transcript turns and the existing append-only `decision_log` as canonical evidence; the dossier stores only the validated analysis and renders the full records directly from their source tables.
 - Added a deliberately weak paragraph-three fixture and verified it with real `gpt-5.6-sol`: one `cannot_reconstruct` finding at characters 801–1271, two defended claims, and zero findings on the defended paragraphs.
+
+## 19 — Apply the dossier persistence migration
+
+Prompt:
+
+> Succeeded
+
+Decisions and outcomes:
+
+- Treated the Supabase success response as authorization to resume the previously blocked stored acceptance path, without altering or reapplying the schema.
+- Ran the complete synthetic weak-viva path through Supabase and real `gpt-5.6-sol`; it persisted two defended claims and one paragraph-three `cannot_reconstruct` finding at the exact 801–1271 span.
+- Verified the rendered dossier in the browser: timestamp and transcript anchors navigate correctly, the document receipt uses an underline rather than a block highlight, both complete appendix records expand, and the page reports no browser errors.
