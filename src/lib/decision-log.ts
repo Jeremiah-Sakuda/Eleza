@@ -77,6 +77,6 @@ export async function assertVivaWithinDuration(sessionId: string) {
   const expiresAt = new Date(result.data.created_at).getTime() + Number(result.data.duration_limit_ms);
   if (result.data.status !== "live" || Date.now() > expiresAt) {
     if (result.data.status === "live") await supabase.from("viva_sessions").update({ status: "abandoned" }).eq("id", sessionId);
-    throw new Error("This viva has reached its server-enforced 2.5-minute limit.");
+    throw new Error("This viva has reached its server-enforced time limit.");
   }
 }

@@ -2,13 +2,15 @@
 
 Eleza is a transparent oral-defense tool for argumentative writing. It parses a submission into claim spans, conducts an examiner-routed viva, and returns a dossier of transcript-to-document receipts. It does not produce authenticity scores, pass/fail labels, or verdicts.
 
+Eleza improves on existing oral-assessment concepts rather than claiming to create the category. Research deployments and commercial tools already generate viva questions from student submissions, but their evaluation is generally hidden and returned as grades or flags. Eleza instead targets a structured claim graph of the specific document and renders the examiner's routing rationale live during the viva. Its dossier returns span-linked evidence for a teacher to adjudicate instead of a verdict.
+
 **Hosted judge demo:** [https://eleza-drab.vercel.app](https://eleza-drab.vercel.app)
 
 ## What judges can test
 
 The zero-login demo starts with a synthetic 537-word essay and supports three paths:
 
-1. **Voice viva:** select **Defend this essay — 2 minutes**, grant microphone access, answer aloud, and press **Finish answer** after each response. The transcript and examiner routing receipts appear live; a dossier is generated when the session ends.
+1. **Voice viva:** select **Defend this essay — about two minutes**, grant microphone access, answer aloud, and press **Finish answer** after each response. The transcript and examiner routing receipts appear live; a dossier is generated when the session ends.
 2. **Text accessibility mode:** select **Use typed answers instead**. Typed responses pass through the same examiner, decision log, divergence analysis, and dossier path as voice responses.
 3. **Unrecorded practice:** select **Try an unrecorded warm-up** for a second synthetic essay. Practice creates no saved transcript, decisions, or dossier.
 
@@ -32,7 +34,7 @@ The architecture has five non-negotiable invariants:
 
 ## Building with Codex
 
-This repository was built in one primary Codex collaboration. The append-only [build log](./build%20log.md) preserves each user prompt and the two or three consequential choices made after it; the Git history keeps each working checkpoint inspectable.
+This repository was built in one primary Codex collaboration. The append-only [build log](./BUILD_LOG.md) preserves each user prompt and the two or three consequential choices made after it; the Git history keeps each working checkpoint inspectable.
 
 ### What Codex built
 
@@ -198,7 +200,7 @@ All acceptance commands use only synthetic fixtures. The viva, stored-dossier, r
 - Open the HTTPS URL in current Chrome or Safari on a desktop or phone.
 - Start the voice demo, grant microphone access, answer one question, and press **Finish answer**.
 - Confirm the student transcript appears, the next spoken question traces to a claim, and a specific rationale appears in the right-hand pane.
-- Let the two-minute limit finish or end early, then inspect the dossier's defended claims, findings, full transcript, and full decision log.
+- Let the session run for about two minutes or end it early, then inspect the dossier's defended claims, findings, full transcript, and full decision log.
 - Repeat through **Use typed answers instead** and confirm the same dossier structure.
 - Open `/triage` and confirm completed vivas are sorted by finding count without turning zero findings into a positive verdict.
 
@@ -217,3 +219,7 @@ All acceptance commands use only synthetic fixtures. The viva, stored-dossier, r
 The browser obtains a rate-authorized, short-lived client token from `/api/realtime/token`, then exchanges WebRTC SDP and audio directly with OpenAI. The standard OpenAI key never enters a client response or bundle. Session and token creation are atomically limited in Supabase to five attempts per salted IP digest per UTC day and a configurable global daily cap. Judge sessions are clamped to 150 seconds in Postgres and checked again before examiner turns.
 
 [`vercel.json`](./vercel.json) registers a daily `/api/health` cron that performs a trivial Supabase read. Production acceptance should include a `200` health response, Chrome and Safari microphone permission on the HTTPS domain, one desktop and one physical phone, a complete voice viva, a complete typed viva, and confirmation that attempt six from one connection receives HTTP `429` with the next UTC retry time.
+
+## License
+
+Eleza is available under the [MIT License](./LICENSE).

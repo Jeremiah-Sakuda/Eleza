@@ -16,7 +16,7 @@ export default function DemoLanding({ judge, practice }: { judge: DemoFixture; p
   }
 
   return <div className="judge-landing">
-    <nav className="judge-nav"><a href="/" className="wordmark">ELEZA</a><div><a href="/triage">Teacher triage</a><span>NO LOGIN · 2-MINUTE DEMO</span></div></nav>
+    <nav className="judge-nav"><a href="/" className="wordmark">ELEZA</a><div><a href="/triage">Teacher triage</a><span>NO LOGIN · ABOUT TWO MINUTES</span></div></nav>
     <header className="judge-hero">
       <p className="eyebrow">RECEIPTS, NOT VERDICTS</p>
       <h1>Students can fake the essay.<br />Not the conversation.</h1>
@@ -32,8 +32,8 @@ export default function DemoLanding({ judge, practice }: { judge: DemoFixture; p
       <aside className="judge-action-card">
         <p className="eyebrow">TRY THE COMPLETE LOOP</p>
         <h2>Defend this essay yourself.</h2>
-        <p>Two minutes. The examiner asks about the text on this page. Your dossier appears when time is up.</p>
-        <button onClick={() => start(judge, { practice: false, deliveryMode: "voice" })}>Defend this essay — 2 minutes</button>
+        <p>About two minutes. The examiner asks about the text on this page. Your dossier appears when time is up.</p>
+        <button onClick={() => start(judge, { practice: false, deliveryMode: "voice" })}>Defend this essay — about two minutes</button>
         <button className="judge-text-button" onClick={() => start(judge, { practice: false, deliveryMode: "text" })}>Use typed answers instead</button>
         <div className="judge-card-rule" />
         <button className="judge-practice-button" onClick={() => start(practice, { practice: true, deliveryMode: "voice" })}>Try an unrecorded warm-up</button>

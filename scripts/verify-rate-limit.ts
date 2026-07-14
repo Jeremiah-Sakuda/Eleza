@@ -24,7 +24,7 @@ async function main() {
     if (attempt <= 5) {
       assert.equal(response.status, 200, body.error);
       assert.ok(body.id, `Session ${attempt} was not created.`);
-      assert.equal(body.durationLimitMs, 150_000, "The server did not clamp the judge duration to 2.5 minutes.");
+      assert.equal(body.durationLimitMs, 150_000, "The server did not apply the judge-session hard ceiling.");
       sessionIds.push(body.id);
     } else {
       assert.equal(response.status, 429, "The sixth session was not blocked.");
@@ -44,7 +44,7 @@ async function main() {
 
   const cleanup = await serviceClient().from("viva_sessions").update({ status: "abandoned" }).in("id", sessionIds);
   if (cleanup.error) throw new Error(`Could not close acceptance sessions: ${cleanup.error.message}`);
-  console.log(`Rate-limit acceptance passed: session and token attempts six were blocked for ${ip}; duration clamped to 150 seconds.`);
+  console.log(`Rate-limit acceptance passed: session and token attempts six were blocked for ${ip}; the configured hard ceiling was applied.`);
 }
 
 void main().catch((error) => {

@@ -35,7 +35,7 @@ Do not use Luna anywhere in v1 — no call site matches its profile, and forcing
 ## Working style
 
 - Build in the phases I give you; do not scaffold ahead of the current phase.
-- After every user prompt, append the prompt verbatim and 2–3 concrete implementation decisions or outcomes to `/build log.md`. Keep the log chronological and append-only.
+- After every user prompt, append the prompt verbatim and 2–3 concrete implementation decisions or outcomes to `/BUILD_LOG.md`. Keep the log chronological and append-only.
 - Prefer boring, inspectable code over clever abstractions — judges read this repo.
 - Every prompt template lives in `/prompts` as a versioned file, not inline strings.
 - When you make a non-obvious tradeoff, add one comment line: `// DECISION: <what and why>`. These get harvested for the README's build narrative.

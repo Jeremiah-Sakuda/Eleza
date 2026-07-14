@@ -324,3 +324,58 @@ Decisions and outcomes:
 - Harvested all 13 implementation `// DECISION:` receipts and all 15 existing commits into a traceable “Building with Codex” narrative, grouped by shipped system and linked back to the relevant source files, prompts, fixtures, and model-routing configuration.
 - Made the human contribution explicit: the architecture and bias guardrails, manuscript-style UI direction, explicit student-controlled answer boundary, and human-owned production credentials/migrations are recorded as deliberate overrides rather than presented as Codex autonomy.
 - Reworked the complete README around the hosted judge flow, three-system architecture, fresh-clone setup, exact environment exposure, synthetic sample inventory, offline/provider-backed test commands, hosted acceptance, and Vercel reproduction. All 18 tests, TypeScript, `npm run build`, and the 30-asset client-secret scan pass.
+
+## 25 — Complete the submission-readiness compliance pass
+
+Prompt:
+
+```text
+README + repo submission-readiness pass. Four fixes, no scope creep:
+
+1. LICENSE: Add an MIT LICENSE file at the repo root (copyright 2026
+   Jeremiah Sakuda). Add a short "License" section at the bottom of the
+   README linking to it. The hackathon rules require a public repo to
+   carry relevant licensing — this is a compliance item.
+
+2. Positioning paragraph: Add 3–4 sentences to the README intro,
+   directly after the current opening paragraph, establishing how Eleza
+   differs from existing oral-assessment tools. The honest frame is
+   "improves on existing concepts," not "first ever." Content to convey:
+   AI oral-assessment tools exist (research deployments and commercial
+   tools that generate viva questions from student submissions); they
+   evaluate behind closed doors and output grades or flags; Eleza
+   differs in three visible ways — questions are generated against a
+   structured claim graph of the specific document rather than its
+   topic, the examiner's routing rationale is rendered live during the
+   viva rather than post-hoc, and the output is span-linked evidence a
+   teacher adjudicates rather than a verdict. Keep it factual and
+   unbranded — do not name specific competitors in the README. Match
+   the existing README voice: plain, specific, no marketing tone.
+
+3. Duration consistency: The README says "2 minutes" in the demo
+   instructions while the deployment section states a 150-second
+   Postgres clamp. Reconcile every duration reference: user-facing copy
+   (README demo instructions AND any UI strings in the app) should say
+   "about two minutes"; state the 150-second server-side clamp exactly
+   once, in the deployment section, as the hard ceiling. Grep the
+   codebase for "2 minutes", "two minutes", "2-minute", "120", and
+   "150" to catch every instance, including page copy and the judge
+   demo button label.
+
+4. Rename "build log.md" to "BUILD_LOG.md" using git mv so history is
+   preserved. Update every reference: the README link, the logging
+   instruction in AGENTS.md, and any code or docs that mention the
+   filename.
+
+Then verify: npm run lint, npm test, npm run build all clean; confirm
+no README link 404s by checking every relative link in the file
+resolves to a real path in the repo. Commit as a single
+submission-readiness commit and push. Append the build log entry for
+this prompt per the standing practice.
+```
+
+Decisions and outcomes:
+
+- Added the standard MIT license and a factual, unbranded positioning paragraph that acknowledges the existing category while distinguishing claim-graph targeting, live routing receipts, and span-linked evidence instead of verdicts.
+- Standardized all deployed judge-facing duration copy to “about two minutes,” kept the 150-second hard ceiling stated once in the README deployment section, and removed numeric duration wording from user-facing limit errors while preserving implementation constants and historical prompt text.
+- Renamed the log with `git mv`, updated active references to `BUILD_LOG.md`, and verified every README-relative link resolves. TypeScript, all 18 tests, and the production build pass cleanly.

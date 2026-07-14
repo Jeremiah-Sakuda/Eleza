@@ -499,6 +499,7 @@ export default function VivaPage() {
 
   const label = status === "live" ? "LIVE" : status === "connecting" ? "CONNECTING" : status === "ending" ? "ENDING" : status === "complete" ? "ENDED" : "READY";
   const durationMinutes = Math.round((handoff.durationMs ?? VIVA_DURATION_MS) / 60_000);
+  const durationLabel = (handoff.durationMs ?? VIVA_DURATION_MS) === 120_000 ? "about two minutes" : `${durationMinutes} minutes`;
   const isTextMode = handoff.deliveryMode === "text";
   const health = isTextMode ? "typed-answer mode" : stallCount === 0 ? `${Math.round(maxDeadAirMs)} ms max handoff` : `${stallCount} handoff${stallCount === 1 ? "" : "s"} over 2s`;
 
@@ -509,7 +510,7 @@ export default function VivaPage() {
     <main className="viva-main viva-reasoning-layout">
       <section className="transcript-column">
         <p className="column-label">TRANSCRIPT</p>
-        {turns.length === 0 && <div className="viva-ready-copy"><h1>{handoff.practice ? "Warm up first." : "Defend the argument."}</h1><p>The AI examiner asks only questions tied to this essay’s parsed claims. {isTextMode ? "Type each answer and send it when complete." : "Answer out loud, then press Finish answer when you are done."} The session ends automatically after {durationMinutes} minutes.</p><p className="viva-start-disclosure">AI INTERACTION · {handoff.practice ? "UNRECORDED PRACTICE" : "TRANSCRIPT AND ROUTING RECEIPTS RECORDED"}</p><button onClick={startLiveSession} disabled={status === "connecting"}>{status === "connecting" ? "Connecting…" : `Start ${durationMinutes}-minute ${handoff.practice ? "warm-up" : "viva"}`}</button></div>}
+        {turns.length === 0 && <div className="viva-ready-copy"><h1>{handoff.practice ? "Warm up first." : "Defend the argument."}</h1><p>The AI examiner asks only questions tied to this essay’s parsed claims. {isTextMode ? "Type each answer and send it when complete." : "Answer out loud, then press Finish answer when you are done."} The session lasts {durationLabel}.</p><p className="viva-start-disclosure">AI INTERACTION · {handoff.practice ? "UNRECORDED PRACTICE" : "TRANSCRIPT AND ROUTING RECEIPTS RECORDED"}</p><button onClick={startLiveSession} disabled={status === "connecting"}>{status === "connecting" ? "Connecting…" : `Start ${handoff.practice ? "warm-up" : "viva"} — ${durationLabel}`}</button></div>}
         {turns.map((turn) => <article className={`transcript-turn ${turn.speaker}`} key={turn.id}>
           <time>{formatElapsed(turn.elapsedMs)}</time><div><small>{turn.speaker.toUpperCase()}{turn.targetClaimId ? ` · ${turn.targetClaimId}${turn.questionKind === "bridge" ? " · BRIDGE" : ""}` : ""}</small><p>{turn.text}</p></div>
         </article>)}
