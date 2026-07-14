@@ -210,3 +210,21 @@ Decisions and outcomes:
 - Diagnosed the error as an unapplied prerequisite migration: `002_live_viva.sql` references the `submissions` table created by `001_claim_graphs.sql`.
 - Kept the schema normalized instead of duplicating or manually recreating `submissions` inside migration 002.
 - Directed the migrations to be applied in filename order; both use idempotent `if not exists` statements, so rerunning 002 after 001 is safe.
+
+## 17 — Confirm the Supabase migrations
+
+Prompt:
+
+> Complete, I got Success. No rows returned
+
+Decisions and outcomes:
+
+- Interpreted “Success. No rows returned” as the expected result for DDL migrations rather than a missing-data failure.
+- Chose to verify the new tables with a real selectable query before spending additional model calls.
+- Resumed the three-run real-provider acceptance harness only after that database verification.
+
+Verification results:
+
+- All three GPT-5.6/Supabase runs completed with eight persisted, claim-specific decisions each and bridge-selection latency below one millisecond.
+- A separate genuine Realtime probe revealed that raw response-level question instructions could make the voice model answer the question; the delivery contract was moved into a versioned “speak exactly, do not answer” template before final voice verification.
+- The corrected genuine `gpt-realtime-2.1` probe spoke the claim-tagged question exactly, with no greeting, answer, or follow-up.

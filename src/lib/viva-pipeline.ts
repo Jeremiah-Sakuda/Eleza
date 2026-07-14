@@ -16,12 +16,25 @@ export const vivaQuestionSchema = z.object({
 
 export type VivaQuestion = z.infer<typeof vivaQuestionSchema>;
 
+export function renderVoiceQuestionInstruction(template: string, question: VivaQuestion) {
+  assertQuestionText(question.text);
+  if (!template.includes("{{QUESTION}}")) throw new Error("Realtime question template is missing {{QUESTION}}.");
+  return template.replaceAll("{{QUESTION}}", question.text);
+}
+
+function assertQuestionText(text: string) {
+  if (text.includes("<question>") || text.includes("</question>")) {
+    throw new Error("Routed question contains reserved delivery tags.");
+  }
+}
+
 function claims(graph: ClaimGraph) {
   return graph.nodes.filter((node) => node.type === "claim");
 }
 
 export function assertQuestionTrace(question: VivaQuestion, graph: ClaimGraph) {
   vivaQuestionSchema.parse(question);
+  assertQuestionText(question.text);
   if (!claims(graph).some((node) => node.id === question.targetClaimId)) {
     throw new Error(`Question ${question.id} does not trace to a claim node.`);
   }

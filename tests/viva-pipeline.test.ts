@@ -7,6 +7,7 @@ import { evaluateRationale, type ExaminerDecision, type ExaminerInput } from "..
 import {
   assertQuestionTrace,
   DEAD_AIR_LIMIT_MS,
+  renderVoiceQuestionInstruction,
   VivaQuestionPipeline,
   VIVA_DURATION_MS,
 } from "../src/lib/viva-pipeline";
@@ -14,6 +15,16 @@ import {
 const fixture = JSON.parse(readFileSync(path.join(process.cwd(), "fixtures/examiner/strong.json"), "utf8")) as {
   input: ExaminerInput;
 };
+
+test("Realtime delivery template tells the voice layer to ask rather than answer", () => {
+  const pipeline = new VivaQuestionPipeline(fixture.input.graph);
+  const question = pipeline.opening();
+  const template = "Speak exactly this and do not answer it: <question>{{QUESTION}}</question>";
+  const instruction = renderVoiceQuestionInstruction(template, question);
+  assert.ok(instruction.includes(question.text));
+  assert.ok(instruction.includes("do not answer it"));
+  assert.ok(!instruction.includes("{{QUESTION}}"));
+});
 
 for (let run = 1; run <= 3; run += 1) {
   test(`five-minute viva pipeline run ${run} completes with traced questions and specific receipts`, () => {

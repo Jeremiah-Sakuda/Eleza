@@ -6,6 +6,7 @@ import type { DecisionLogEntry } from "@/lib/decision-log";
 import { formatElapsed, type TranscriptTurn } from "@/lib/scripted-viva";
 import {
   DEAD_AIR_LIMIT_MS,
+  renderVoiceQuestionInstruction,
   VivaQuestionPipeline,
   VIVA_DURATION_MS,
   type VivaQuestion,
@@ -31,6 +32,7 @@ export default function VivaPage() {
 
   const startedAt = useRef(0);
   const pipeline = useRef<VivaQuestionPipeline | null>(null);
+  const voiceQuestionTemplate = useRef<string | null>(null);
   const activeQuestion = useRef<VivaQuestion | null>(null);
   const answerSequence = useRef(0);
   const vivaSessionId = useRef<string | null>(null);
@@ -117,6 +119,7 @@ export default function VivaPage() {
 
   function speakQuestion(question: VivaQuestion, answerCompletedAt?: number) {
     if (channel.current?.readyState !== "open") throw new Error("Realtime control channel is not open.");
+    if (!voiceQuestionTemplate.current) throw new Error("Realtime question delivery template is not loaded.");
     activeQuestion.current = question;
     if (answerCompletedAt !== undefined) awaitingAudioSince.current = answerCompletedAt;
     setPhase("speaking");
@@ -132,7 +135,7 @@ export default function VivaPage() {
         },
         input: [],
         output_modalities: ["audio"],
-        instructions: question.text,
+        instructions: renderVoiceQuestionInstruction(voiceQuestionTemplate.current, question),
       },
     }));
   }
@@ -247,6 +250,14 @@ export default function VivaPage() {
     pipeline.current = new VivaQuestionPipeline(handoff.graph);
 
     try {
+      if (!voiceQuestionTemplate.current) {
+        const templateResponse = await fetch("/api/realtime/question-template");
+        const templateResult = await templateResponse.json() as { template?: string; error?: string };
+        if (!templateResponse.ok || !templateResult.template) {
+          throw new Error(templateResult.error || "Could not load the Realtime question template.");
+        }
+        voiceQuestionTemplate.current = templateResult.template;
+      }
       const sessionResponse = await fetch("/api/viva/sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
