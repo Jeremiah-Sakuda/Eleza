@@ -9,7 +9,9 @@
     "lint": "tsc --noEmit",
     "test": "node --import tsx --test tests/**/*.test.ts",
     "verify:fixture": "node scripts/verify-fixture.mjs",
-    "verify:viva": "node --env-file=.env.local --import tsx scripts/verify-wired-viva.ts"
+    "verify:viva": "node --env-file=.env.local --import tsx scripts/verify-wired-viva.ts",
+    "verify:dossier": "node --env-file=.env.local --import tsx scripts/verify-dossier.ts",
+    "verify:dossier:stored": "node --env-file=.env.local --import tsx scripts/verify-dossier.ts --persist"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.57.4",

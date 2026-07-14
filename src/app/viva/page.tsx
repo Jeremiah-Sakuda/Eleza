@@ -31,6 +31,7 @@ export default function VivaPage() {
   const [error, setError] = useState("");
 
   const startedAt = useRef(0);
+  const turnsRef = useRef<LiveTurn[]>([]);
   const pipeline = useRef<VivaQuestionPipeline | null>(null);
   const voiceQuestionTemplate = useRef<string | null>(null);
   const activeQuestion = useRef<VivaQuestion | null>(null);
@@ -81,14 +82,16 @@ export default function VivaPage() {
   ) {
     const clean = text.trim();
     if (!clean) return;
-    setTurns((current) => [...current, {
-      id: `${speaker}-${current.length}-${at}`,
+    const turn: LiveTurn = {
+      id: `${speaker}-${turnsRef.current.length}-${at}`,
       speaker,
       text: clean,
       elapsedMs: Math.max(0, at),
       targetClaimId: question?.targetClaimId,
       questionKind: question?.kind,
-    }]);
+    };
+    turnsRef.current = [...turnsRef.current, turn];
+    setTurns(turnsRef.current);
   }
 
   function stopTransport() {
@@ -234,6 +237,7 @@ export default function VivaPage() {
   async function startLiveSession() {
     if (!handoff || !pipeline.current) return;
     stopTransport();
+    turnsRef.current = [];
     setTurns([]);
     setDecisionLog([]);
     setPendingDecisions(0);
@@ -261,7 +265,12 @@ export default function VivaPage() {
       const sessionResponse = await fetch("/api/viva/sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ graph: handoff.graph, submissionId: handoff.submissionId }),
+        body: JSON.stringify({
+          graph: handoff.graph,
+          submissionId: handoff.submissionId,
+          sourceText: handoff.sourceText,
+          title: handoff.title,
+        }),
       });
       const session = await sessionResponse.json() as { id?: string; error?: string };
       if (!sessionResponse.ok || !session.id) throw new Error(session.error || "Could not create the decision log.");
@@ -312,8 +321,16 @@ export default function VivaPage() {
     try {
       if (evaluationFailure.current) throw evaluationFailure.current;
       if (vivaSessionId.current) {
-        const response = await fetch(`/api/viva/sessions/${vivaSessionId.current}/complete`, { method: "POST" });
-        if (!response.ok) throw new Error((await response.json()).error || "Could not close the decision log.");
+        const response = await fetch(`/api/viva/sessions/${vivaSessionId.current}/complete`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ transcript: turnsRef.current }),
+        });
+        const result = await response.json() as { dossierId?: string; error?: string };
+        if (!response.ok || !result.dossierId) throw new Error(result.error || "Could not generate the viva dossier.");
+        setStatus("complete");
+        window.location.assign(`/dossier/${result.dossierId}`);
+        return;
       }
       setStatus("complete");
     } catch (cause) {

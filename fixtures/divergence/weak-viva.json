@@ -1,0 +1,47 @@
+{
+  "title": "Community gardens and resilient neighborhoods",
+  "claims": [
+    {
+      "id": "claim_food_access",
+      "paragraph_prefix": "First, gardens give residents",
+      "label": "Gardens provide a modest local supplement to food access."
+    },
+    {
+      "id": "claim_relationships",
+      "paragraph_prefix": "Second, gardening creates repeated",
+      "label": "Repeated cooperation in a shared garden creates opportunities for neighborhood trust."
+    },
+    {
+      "id": "claim_resilience",
+      "paragraph_prefix": "Gardens also make neighborhoods",
+      "label": "Gardens improve resilience by preserving neighborhood coordination during disruptions."
+    }
+  ],
+  "answers": [
+    {
+      "claim_id": "claim_food_access",
+      "timestamp": 42000,
+      "question": "What is the food-access claim, and what limitation does the essay place on it?",
+      "answer": "The garden supplements nearby food access for some residents, but it does not replace a grocery store or claim to feed the whole neighborhood.",
+      "assessment": "strong"
+    },
+    {
+      "claim_id": "claim_relationships",
+      "timestamp": 118000,
+      "question": "Reconstruct how repeated gardening tasks are supposed to build neighborhood trust.",
+      "answer": "I cannot reconstruct paragraph three. I do not remember what claim it makes or how its examples are supposed to support it.",
+      "assessment": "unsupported"
+    },
+    {
+      "claim_id": "claim_resilience",
+      "timestamp": 196000,
+      "question": "Why does the essay say resilience is more than the vegetables harvested?",
+      "answer": "The storm example is mainly about organization: neighbors already knew who could share information, coordinate tools, and check on older residents when store deliveries were delayed.",
+      "assessment": "strong"
+    }
+  ],
+  "expected_finding": {
+    "claim_id": "claim_relationships",
+    "type": "cannot_reconstruct"
+  }
+}

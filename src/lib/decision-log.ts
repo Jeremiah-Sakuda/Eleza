@@ -15,16 +15,27 @@ export const decisionLogEntrySchema = examinerDecisionSchema.extend({
 
 export type DecisionLogEntry = z.infer<typeof decisionLogEntrySchema>;
 
-function serviceClient() {
+export function serviceClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) throw new Error("Supabase is required for live vivas. Configure NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.");
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
-export async function createVivaSession(graph: ClaimGraph, submissionId?: string) {
+export async function createVivaSession(
+  graph: ClaimGraph,
+  submissionId?: string,
+  sourceText?: string,
+  title?: string,
+) {
   const supabase = serviceClient();
-  const payload = { graph: claimGraphSchema.parse(graph), submission_id: submissionId || null, status: "live" };
+  const payload = {
+    graph: claimGraphSchema.parse(graph),
+    submission_id: submissionId || null,
+    source_text: sourceText || null,
+    title: title || null,
+    status: "live",
+  };
   const result = await supabase.from("viva_sessions").insert(payload).select("id, created_at").single();
   if (result.error) throw new Error(`Could not create viva session: ${result.error.message}`);
   return result.data as { id: string; created_at: string };

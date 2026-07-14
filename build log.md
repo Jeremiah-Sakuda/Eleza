@@ -228,3 +228,19 @@ Verification results:
 - All three GPT-5.6/Supabase runs completed with eight persisted, claim-specific decisions each and bridge-selection latency below one millisecond.
 - A separate genuine Realtime probe revealed that raw response-level question instructions could make the voice model answer the question; the delivery contract was moved into a versioned “speak exactly, do not answer” template before final voice verification.
 - The corrected genuine `gpt-realtime-2.1` probe spoke the claim-tagged question exactly, with no greeting, answer, or follow-up.
+
+## 18 — Build post-viva divergence analysis and dossier
+
+Prompt:
+
+```text
+Build post-viva divergence analysis: compare the transcript against the claim graph for the three divergence types (cannot_reconstruct, mechanism_gap, inconsistency — nothing else). Each finding: {timestamp, transcript_excerpt, claim_id, doc_span, type, note}. Generate the dossier view: claims defended (with excerpts), findings (each linking timestamp ↔ highlighted document span), full transcript, full decision log. Version the prompt in /prompts/divergence.md.
+
+Acceptance: running the dossier on a deliberately weak viva (I'll record one where I can't defend paragraph 3) produces at least one cannot_reconstruct finding pointing at the correct span, and zero findings on the paragraphs I defended well.
+```
+
+Decisions and outcomes:
+
+- Restricted divergence output in both the prompt and strict Zod schema to `cannot_reconstruct`, `mechanism_gap`, and `inconsistency`, then added semantic receipt validation for exact claim IDs, timestamps, answer excerpts, assessment support, and graph-owned source spans.
+- Kept raw transcript turns and the existing append-only `decision_log` as canonical evidence; the dossier stores only the validated analysis and renders the full records directly from their source tables.
+- Added a deliberately weak paragraph-three fixture and verified it with real `gpt-5.6-sol`: one `cannot_reconstruct` finding at characters 801–1271, two defended claims, and zero findings on the defended paragraphs.
