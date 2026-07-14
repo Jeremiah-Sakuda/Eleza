@@ -198,3 +198,15 @@ Decisions and outcomes:
 - Reduced the immediate manual blocker to one action: apply `supabase/migrations/002_live_viva.sql` in the configured Supabase project's SQL Editor.
 - Kept the real-provider verification, database readback, automated tests, build, commits, and eventual push as Codex-owned work after the migration is applied.
 - Identified the final microphone acceptance as necessarily human-operated: grant browser microphone permission and speak through the live viva while its measured handoff latency and reasoning pane are observed.
+
+## 16 — Resolve the missing Supabase prerequisite
+
+Prompt:
+
+> I got this error Error: Failed to run sql query: ERROR: 42P01: relation "submissions" does not exist
+
+Decisions and outcomes:
+
+- Diagnosed the error as an unapplied prerequisite migration: `002_live_viva.sql` references the `submissions` table created by `001_claim_graphs.sql`.
+- Kept the schema normalized instead of duplicating or manually recreating `submissions` inside migration 002.
+- Directed the migrations to be applied in filename order; both use idempotent `if not exists` statements, so rerunning 002 after 001 is safe.
