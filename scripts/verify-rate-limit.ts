@@ -4,6 +4,7 @@ import path from "node:path";
 import { POST } from "@/app/api/viva/sessions/route";
 import { serviceClient } from "@/lib/decision-log";
 import { judgeDemoGraph } from "@/lib/demo-fixtures";
+import { authorizeRealtimeToken } from "@/lib/rate-limit";
 
 async function main() {
   process.env.DEMO_GLOBAL_DAILY_CAP = "100000";
@@ -16,13 +17,14 @@ async function main() {
     const request = new Request("https://eleza.example/api/viva/sessions", {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-vercel-forwarded-for": ip },
-      body: JSON.stringify({ graph, sourceText, title: "Rate-limit acceptance fixture" }),
+      body: JSON.stringify({ graph, sourceText, title: "Rate-limit acceptance fixture", durationMs: 999_999 }),
     });
     const response = await POST(request);
-    const body = await response.json() as { id?: string; code?: string; error?: string };
+    const body = await response.json() as { id?: string; durationLimitMs?: number; code?: string; error?: string };
     if (attempt <= 5) {
       assert.equal(response.status, 200, body.error);
       assert.ok(body.id, `Session ${attempt} was not created.`);
+      assert.equal(body.durationLimitMs, 150_000, "The server did not clamp the judge duration to 2.5 minutes.");
       sessionIds.push(body.id);
     } else {
       assert.equal(response.status, 429, "The sixth session was not blocked.");
@@ -31,9 +33,18 @@ async function main() {
     }
   }
 
+  const tokenRequest = new Request("https://eleza.example/api/realtime/token", { headers: { "x-vercel-forwarded-for": ip } });
+  for (const sessionId of sessionIds) {
+    const authorization = await authorizeRealtimeToken(tokenRequest, sessionId);
+    assert.equal(authorization.allowed, true, `Token for ${sessionId} was refused before the cap.`);
+  }
+  const sixthToken = await authorizeRealtimeToken(tokenRequest, sessionIds[0]);
+  assert.equal(sixthToken.allowed, false, "The sixth Realtime token was not blocked.");
+  assert.equal(sixthToken.reason, "ip_daily_cap");
+
   const cleanup = await serviceClient().from("viva_sessions").update({ status: "abandoned" }).in("id", sessionIds);
   if (cleanup.error) throw new Error(`Could not close acceptance sessions: ${cleanup.error.message}`);
-  console.log(`Rate-limit acceptance passed: five sessions allowed and attempt six blocked for ${ip}.`);
+  console.log(`Rate-limit acceptance passed: session and token attempts six were blocked for ${ip}; duration clamped to 150 seconds.`);
 }
 
 void main().catch((error) => {

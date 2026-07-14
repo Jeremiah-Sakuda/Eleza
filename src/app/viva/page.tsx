@@ -313,21 +313,21 @@ export default function VivaPage() {
     pipeline.current = new VivaQuestionPipeline(handoff.graph);
 
     try {
-      if (!handoff.practice) {
-        const sessionResponse = await fetch("/api/viva/sessions", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            graph: handoff.graph,
-            submissionId: handoff.submissionId,
-            sourceText: handoff.sourceText,
-            title: handoff.title,
-          }),
-        });
-        const session = await sessionResponse.json() as { id?: string; error?: string };
-        if (!sessionResponse.ok || !session.id) throw new Error(session.error || "Could not create the decision log.");
-        vivaSessionId.current = session.id;
-      }
+      const sessionResponse = await fetch("/api/viva/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          graph: handoff.graph,
+          submissionId: handoff.submissionId,
+          sourceText: handoff.sourceText,
+          title: handoff.title,
+          durationMs: handoff.durationMs,
+          sessionKind: handoff.practice ? "practice" : "judge",
+        }),
+      });
+      const session = await sessionResponse.json() as { id?: string; durationLimitMs?: number; error?: string };
+      if (!sessionResponse.ok || !session.id) throw new Error(session.error || "Could not create the decision log.");
+      vivaSessionId.current = session.id;
 
       if (handoff.deliveryMode === "text") {
         startedAt.current = Date.now();
@@ -368,9 +368,17 @@ export default function VivaPage() {
 
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
-      const realtimeResponse = await fetch("/api/realtime/session", {
+      const tokenResponse = await fetch("/api/realtime/token", {
         method: "POST",
-        headers: { "Content-Type": "application/sdp" },
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId: vivaSessionId.current }),
+      });
+      const token = await tokenResponse.json() as { value?: string; error?: string };
+      if (!tokenResponse.ok || !token.value) throw new Error(token.error || "Could not authorize the Realtime voice session.");
+      // DECISION: the browser exchanges SDP directly with OpenAI using a one-minute client secret; audio never crosses the app server.
+      const realtimeResponse = await fetch("https://api.openai.com/v1/realtime/calls", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token.value}`, "Content-Type": "application/sdp" },
         body: offer.sdp,
       });
       if (!realtimeResponse.ok) throw new Error((await realtimeResponse.text()) || "Could not create the Realtime voice session.");
@@ -391,6 +399,9 @@ export default function VivaPage() {
     try {
       if (evaluationFailure.current) throw evaluationFailure.current;
       if (handoff?.practice) {
+        if (vivaSessionId.current) {
+          await fetch(`/api/viva/sessions/${vivaSessionId.current}/practice-complete`, { method: "POST" });
+        }
         setStatus("complete");
         return;
       }

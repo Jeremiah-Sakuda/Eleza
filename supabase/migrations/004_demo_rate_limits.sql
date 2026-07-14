@@ -1,64 +1,123 @@
-create table if not exists demo_ip_daily_limits (
-  limit_day date not null,
-  ip_hash text not null,
-  session_count integer not null default 0 check (session_count >= 0),
-  updated_at timestamptz not null default now(),
-  primary key (limit_day, ip_hash)
-);
+alter table viva_sessions add column if not exists request_ip_hash text;
+alter table viva_sessions add column if not exists duration_limit_ms integer not null default 150000
+  check (duration_limit_ms between 30000 and 150000);
+alter table viva_sessions add column if not exists session_kind text not null default 'judge'
+  check (session_kind in ('judge', 'practice', 'internal'));
+alter table viva_sessions add column if not exists realtime_token_count integer not null default 0
+  check (realtime_token_count >= 0);
 
-create table if not exists demo_global_daily_limits (
-  limit_day date primary key,
-  session_count integer not null default 0 check (session_count >= 0),
-  updated_at timestamptz not null default now()
-);
+create index if not exists viva_sessions_ip_created_idx
+  on viva_sessions (request_ip_hash, created_at desc)
+  where request_ip_hash is not null;
 
-create or replace function claim_demo_session(
+create or replace function create_public_viva_session(
   p_ip_hash text,
-  p_ip_limit integer default 5,
-  p_global_limit integer default 100
+  p_graph jsonb,
+  p_source_text text,
+  p_title text,
+  p_submission_id uuid default null,
+  p_duration_limit_ms integer default 120000,
+  p_session_kind text default 'judge',
+  p_global_limit integer default 200
 )
-returns table (allowed boolean, reason text, ip_count integer, global_count integer)
+returns table (
+  allowed boolean,
+  reason text,
+  viva_session_id uuid,
+  ip_count integer,
+  global_count integer,
+  applied_duration_limit_ms integer
+)
 language plpgsql
 security definer
 set search_path = public
 as $$
 declare
-  v_day date := (now() at time zone 'utc')::date;
+  v_day_start timestamptz := date_trunc('day', now() at time zone 'utc') at time zone 'utc';
   v_ip_count integer;
   v_global_count integer;
+  v_session_id uuid;
+  v_duration integer := least(greatest(p_duration_limit_ms, 30000), 150000);
 begin
-  insert into demo_ip_daily_limits (limit_day, ip_hash, session_count)
-  values (v_day, p_ip_hash, 1)
-  on conflict (limit_day, ip_hash) do update
-    set session_count = demo_ip_daily_limits.session_count + 1,
-        updated_at = now()
-  returning session_count into v_ip_count;
+  perform pg_advisory_xact_lock(hashtext('eleza-public-viva-' || v_day_start::text));
 
-  select session_count into v_global_count
-  from demo_global_daily_limits
-  where limit_day = v_day;
-  v_global_count := coalesce(v_global_count, 0);
+  select count(*)::integer into v_ip_count
+  from viva_sessions
+  where request_ip_hash = p_ip_hash and created_at >= v_day_start;
 
-  if v_ip_count > p_ip_limit then
-    return query select false, 'ip_daily_cap'::text, v_ip_count, v_global_count;
+  select count(*)::integer into v_global_count
+  from viva_sessions
+  where request_ip_hash is not null and created_at >= v_day_start;
+
+  if v_ip_count >= 5 then
+    return query select false, 'ip_daily_cap'::text, null::uuid, v_ip_count, v_global_count, v_duration;
+    return;
+  end if;
+  if v_global_count >= p_global_limit then
+    return query select false, 'global_daily_cap'::text, null::uuid, v_ip_count, v_global_count, v_duration;
     return;
   end if;
 
-  insert into demo_global_daily_limits (limit_day, session_count)
-  values (v_day, 1)
-  on conflict (limit_day) do update
-    set session_count = demo_global_daily_limits.session_count + 1,
-        updated_at = now()
-  returning session_count into v_global_count;
+  insert into viva_sessions (
+    submission_id, graph, source_text, title, status, request_ip_hash,
+    duration_limit_ms, session_kind
+  ) values (
+    p_submission_id, p_graph, p_source_text, p_title, 'live', p_ip_hash,
+    v_duration, p_session_kind
+  ) returning id into v_session_id;
 
-  if v_global_count > p_global_limit then
-    return query select false, 'global_daily_cap'::text, v_ip_count, v_global_count;
-    return;
-  end if;
-
-  return query select true, 'allowed'::text, v_ip_count, v_global_count;
+  return query select true, 'allowed'::text, v_session_id, v_ip_count + 1, v_global_count + 1, v_duration;
 end;
 $$;
 
-revoke all on function claim_demo_session(text, integer, integer) from public;
-grant execute on function claim_demo_session(text, integer, integer) to service_role;
+create or replace function authorize_realtime_token(
+  p_session_id uuid,
+  p_ip_hash text,
+  p_global_limit integer default 200
+)
+returns table (allowed boolean, reason text, ip_token_count integer, global_token_count integer)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_day_start timestamptz := date_trunc('day', now() at time zone 'utc') at time zone 'utc';
+  v_session viva_sessions%rowtype;
+  v_ip_tokens integer;
+  v_global_tokens integer;
+begin
+  perform pg_advisory_xact_lock(hashtext('eleza-realtime-token-' || v_day_start::text));
+  select * into v_session from viva_sessions where id = p_session_id for update;
+
+  if v_session.id is null or v_session.request_ip_hash is distinct from p_ip_hash then
+    return query select false, 'session_not_available'::text, 0, 0;
+    return;
+  end if;
+  if v_session.status <> 'live' or now() > v_session.created_at + make_interval(secs => v_session.duration_limit_ms / 1000.0) then
+    return query select false, 'session_expired'::text, 0, 0;
+    return;
+  end if;
+
+  select coalesce(sum(realtime_token_count), 0)::integer into v_ip_tokens
+  from viva_sessions where request_ip_hash = p_ip_hash and created_at >= v_day_start;
+  select coalesce(sum(realtime_token_count), 0)::integer into v_global_tokens
+  from viva_sessions where request_ip_hash is not null and created_at >= v_day_start;
+
+  if v_ip_tokens >= 5 then
+    return query select false, 'ip_daily_cap'::text, v_ip_tokens, v_global_tokens;
+    return;
+  end if;
+  if v_global_tokens >= p_global_limit then
+    return query select false, 'global_daily_cap'::text, v_ip_tokens, v_global_tokens;
+    return;
+  end if;
+
+  update viva_sessions set realtime_token_count = realtime_token_count + 1 where id = p_session_id;
+  return query select true, 'allowed'::text, v_ip_tokens + 1, v_global_tokens + 1;
+end;
+$$;
+
+revoke all on function create_public_viva_session(text, jsonb, text, text, uuid, integer, text, integer) from public;
+grant execute on function create_public_viva_session(text, jsonb, text, text, uuid, integer, text, integer) to service_role;
+revoke all on function authorize_realtime_token(uuid, text, integer) from public;
+grant execute on function authorize_realtime_token(uuid, text, integer) to service_role;

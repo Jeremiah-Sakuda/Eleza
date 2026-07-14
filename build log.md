@@ -256,3 +256,35 @@ Decisions and outcomes:
 - Treated the Supabase success response as authorization to resume the previously blocked stored acceptance path, without altering or reapplying the schema.
 - Ran the complete synthetic weak-viva path through Supabase and real `gpt-5.6-sol`; it persisted two defended claims and one paragraph-three `cannot_reconstruct` finding at the exact 801–1271 span.
 - Verified the rendered dossier in the browser: timestamp and transcript anchors navigate correctly, the document receipt uses an underline rather than a block highlight, both complete appendix records expand, and the page reports no browser errors.
+
+## 20 — Build the public judge demo and deployment path
+
+Prompt:
+
+```text
+Build the zero-login judge demo: landing page with the fixture essay, a "defend this essay yourself" button starting a 2-minute viva, dossier delivered on completion. Add practice mode (unrecorded warm-up on a second sample) and the text-mode accessibility fallback (typed answers through the same examiner loop). Add the minimal teacher triage view: a table of completed vivas sorted by finding count, linking to dossiers. Deploy to Vercel with rate limiting on session creation (per-IP, and a global daily cap). Add the AI-interaction disclosure line to the viva start screen.
+
+Acceptance: a stranger with the URL can complete the full judge flow on a phone and a laptop with no instructions; rate limiter blocks the 6th session from one IP; text mode produces a dossier equivalent to voice mode.
+```
+
+Decisions and outcomes:
+
+- Made the public landing instant by shipping deterministic, span-validated graphs for two synthetic samples; the primary sample starts a two-minute recorded viva, while practice uses the same examiner and routing logic but writes no session, transcript, decision, or dossier records.
+- Routed typed answers through the same `/api/viva/turn` persistence and examiner quality gate as voice answers, so both modes converge on the identical dossier completion endpoint and append-only decision log.
+- Added an atomic Supabase limiter with salted IP hashes, a five-session per-IP daily cap, a configurable global daily cap, and a real-dossier triage table; local tests and production build pass, with stored acceptance and deployment pending migration 004.
+
+## 21 — Harden the judge demo for production
+
+Prompt:
+
+```text
+Prepare the app for production deploy. Codex-owned work: (1) Ephemeral token endpoint — a server route minting short-lived Realtime client tokens; the browser connects to the Realtime API directly, audio never proxies through serverless functions, OPENAI_API_KEY never reaches the client; shortest TTL the API allows; same rate limits as viva creation. (2) Rate limiting — per-IP cap on viva/token creation (5/day) and a global daily cap (env var, default 200), enforced server-side via the hashed-IP column on vivas; limit responses are plain and honest, no apology, state when to retry. (3) Keep-alive — /api/health doing a trivial Supabase select + vercel.json cron pinging it daily (free tier pauses after ~7 days idle). (4) Config hygiene — all secrets from env vars only, nothing sensitive under NEXT_PUBLIC_, .env.local gitignored, add .env.example documenting the three vars. (5) Judge-demo vivas hard-capped at 2.5 minutes server-side. (6) README deployment section written for a judge reproducing from a fresh clone. End with a checklist of my by-hand steps (Vercel linking, dashboard env vars, OpenAI spend cap, migrations).
+
+Acceptance: HTTPS URL serves the app; mic permission works on the production domain in Chrome and Safari, desktop and one phone; a full viva completes against production; the 6th same-IP attempt is refused; /api/health returns 200 with cron registered; no secret in client bundles (search the built output).
+```
+
+Decisions and outcomes:
+
+- Replaced the server-proxied SDP route with a rate-authorized `/api/realtime/token` endpoint and direct browser-to-OpenAI WebRTC exchange; official Realtime documentation currently fixes client-secret expiry at one minute, and the standard API key remains server-only.
+- Reworked quotas around `viva_sessions.request_ip_hash`: atomic Postgres functions enforce five session creations and five token issuances per salted IP digest per UTC day, a configurable global cap defaulting to 200, and a database-level 150-second maximum checked again before examiner turns.
+- Added a Supabase health select, daily Vercel cron, fresh-clone deployment README, exact environment example, and built-client secret scanner; 16 tests, TypeScript, production build, and a 30-asset bundle scan pass pending migration 004 and hosted-device verification.

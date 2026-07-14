@@ -66,3 +66,17 @@ export async function completeVivaSession(sessionId: string) {
     .update({ status: "complete", completed_at: new Date().toISOString() }).eq("id", sessionId);
   if (result.error) throw new Error(`Could not complete viva session: ${result.error.message}`);
 }
+
+export async function assertVivaWithinDuration(sessionId: string) {
+  const supabase = serviceClient();
+  const result = await supabase.from("viva_sessions")
+    .select("created_at, duration_limit_ms, status")
+    .eq("id", sessionId)
+    .single();
+  if (result.error) throw new Error(`Could not verify viva duration: ${result.error.message}`);
+  const expiresAt = new Date(result.data.created_at).getTime() + Number(result.data.duration_limit_ms);
+  if (result.data.status !== "live" || Date.now() > expiresAt) {
+    if (result.data.status === "live") await supabase.from("viva_sessions").update({ status: "abandoned" }).eq("id", sessionId);
+    throw new Error("This viva has reached its server-enforced 2.5-minute limit.");
+  }
+}

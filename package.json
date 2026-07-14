@@ -12,7 +12,8 @@
     "verify:viva": "node --env-file=.env.local --import tsx scripts/verify-wired-viva.ts",
     "verify:dossier": "node --env-file=.env.local --import tsx scripts/verify-dossier.ts",
     "verify:dossier:stored": "node --env-file=.env.local --import tsx scripts/verify-dossier.ts --persist",
-    "verify:rate-limit": "node --env-file=.env.local --import tsx scripts/verify-rate-limit.ts"
+    "verify:rate-limit": "node --env-file=.env.local --import tsx scripts/verify-rate-limit.ts",
+    "verify:client-secrets": "node --env-file=.env.local scripts/verify-client-secrets.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.57.4",

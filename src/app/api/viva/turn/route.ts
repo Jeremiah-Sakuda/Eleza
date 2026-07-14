@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { appendDecisionLog } from "@/lib/decision-log";
+import { appendDecisionLog, assertVivaWithinDuration } from "@/lib/decision-log";
 import { examineAnswer, examinerInputSchema } from "@/lib/examiner";
 
 const inputSchema = examinerInputSchema.extend({
@@ -12,6 +12,7 @@ const inputSchema = examinerInputSchema.extend({
 export async function POST(request: Request) {
   try {
     const input = inputSchema.parse(await request.json());
+    await assertVivaWithinDuration(input.session_id);
     const decision = await examineAnswer(input);
     if (decision.quality_gate.status !== "passed") {
       throw new Error("Examiner rationale failed the receipt gate after all retries; no routing decision was emitted.");
