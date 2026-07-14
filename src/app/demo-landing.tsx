@@ -1,10 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import type { ClaimGraph } from "@/lib/claim-graph";
+import { countWords, PASTE_MAX_WORDS, PASTE_MIN_WORDS } from "@/lib/paste-submission";
 
 type DemoFixture = { title: string; sourceText: string; graph: ClaimGraph };
 
 export default function DemoLanding({ judge, practice }: { judge: DemoFixture; practice: DemoFixture }) {
+  const [pastedText, setPastedText] = useState("");
+  const [pasteError, setPasteError] = useState("");
+  const [mappingPaste, setMappingPaste] = useState(false);
+  const pastedWordCount = countWords(pastedText);
+
   function start(fixture: DemoFixture, options: { practice: boolean; deliveryMode: "voice" | "text" }) {
     sessionStorage.setItem("eleza:viva-handoff", JSON.stringify({
       ...fixture,
@@ -13,6 +20,34 @@ export default function DemoLanding({ judge, practice }: { judge: DemoFixture; p
       durationMs: 120_000,
     }));
     window.location.assign("/viva");
+  }
+
+  async function inspectPastedWriting(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (pastedWordCount < PASTE_MIN_WORDS || pastedWordCount > PASTE_MAX_WORDS) return;
+    setPasteError("");
+    setMappingPaste(true);
+    try {
+      const response = await fetch("/api/claim-graph/paste", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: pastedText }),
+      });
+      const result = await response.json() as { sourceText?: string; graph?: ClaimGraph; persistence?: { persisted: boolean; submissionId?: string; graphId?: string }; error?: string };
+      if (!response.ok || !result.sourceText || !result.graph || !result.persistence) {
+        throw new Error(result.error || "This text could not be mapped into an argument.");
+      }
+      sessionStorage.setItem("eleza:inspection-handoff", JSON.stringify({
+        title: "Pasted argumentative writing",
+        sourceKind: "paste",
+        durationMs: 120_000,
+        result,
+      }));
+      window.location.assign("/inspect");
+    } catch (cause) {
+      setPasteError(cause instanceof Error ? cause.message : "This text could not be mapped into an argument.");
+      setMappingPaste(false);
+    }
   }
 
   return <div className="judge-landing">
@@ -40,6 +75,22 @@ export default function DemoLanding({ judge, practice }: { judge: DemoFixture; p
         <small>Practice uses a different sample and saves no transcript, decisions, or dossier.</small>
       </aside>
     </main>
+
+    <section className="judge-paste" aria-labelledby="paste-title">
+      <div>
+        <p className="eyebrow">YOUR WRITING</p>
+        <h2 id="paste-title">Defend your own writing.</h2>
+        <p>Works best on argumentative writing that states a position and supports it with distinct claims.</p>
+      </div>
+      <form onSubmit={inspectPastedWriting}>
+        <label htmlFor="pasted-writing">Paste 250–1,200 words</label>
+        <textarea id="pasted-writing" rows={10} value={pastedText} onChange={(event) => setPastedText(event.target.value)} placeholder="Paste your argumentative prose here…" />
+        <div><span className={pastedWordCount > PASTE_MAX_WORDS ? "over" : ""}>{pastedWordCount.toLocaleString("en-US")} words</span><button type="submit" disabled={mappingPaste || pastedWordCount < PASTE_MIN_WORDS || pastedWordCount > PASTE_MAX_WORDS}>{mappingPaste ? "Mapping your argument…" : "Map my argument"}</button></div>
+        {pastedWordCount > 0 && pastedWordCount < PASTE_MIN_WORDS && <p className="paste-guidance">Paste at least 250 words so there is enough argument to examine.</p>}
+        {pastedWordCount > PASTE_MAX_WORDS && <p className="paste-guidance">Keep the pasted text to 1,200 words or fewer.</p>}
+        {pasteError && <p className="paste-guidance" role="alert">{pasteError}</p>}
+      </form>
+    </section>
 
     <section className="judge-steps" aria-label="How the demo works">
       <div><b>01</b><h3>Read the essay</h3><p>The sample is already parsed into exact claim spans.</p></div>

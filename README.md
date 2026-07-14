@@ -8,13 +8,14 @@ Eleza improves on existing oral-assessment concepts rather than claiming to crea
 
 ## What judges can test
 
-The zero-login demo starts with a synthetic 537-word essay and supports three paths:
+The zero-login demo starts with a synthetic 537-word essay and supports four paths:
 
 1. **Voice viva:** select **Defend this essay — about two minutes**, grant microphone access, answer aloud, and press **Finish answer** after each response. The transcript and examiner routing receipts appear live; a dossier is generated when the session ends.
 2. **Text accessibility mode:** select **Use typed answers instead**. Typed responses pass through the same examiner, decision log, divergence analysis, and dossier path as voice responses.
 3. **Unrecorded practice:** select **Try an unrecorded warm-up** for a second synthetic essay. Practice creates no saved transcript, decisions, or dossier.
+4. **Defend your own writing:** paste 250–1,200 words of argumentative prose, confirm the generated claim graph, then choose the same voice or typed viva. Text without at least four claim nodes is stopped before session creation, so it does not consume the daily allowance.
 
-The claim-graph upload and inspection flow is available at [`/inspect`](https://eleza-drab.vercel.app/inspect), and the findings-sorted teacher dossier list is at [`/triage`](https://eleza-drab.vercel.app/triage). Public session creation is limited to five sessions per IP digest per UTC day, so judges sharing one network should use the existing demo deliberately.
+Completed recorded vivas open an unguessable student dossier link that can be copied and opened in a private window; it renders the same evidence document available to the teacher. Dossiers can also be printed from the browser with their transcript and decision-log appendices intact. The claim-graph upload and inspection flow is available at [`/inspect`](https://eleza-drab.vercel.app/inspect), and the findings-sorted teacher dossier list is at [`/triage`](https://eleza-drab.vercel.app/triage). Public session creation is limited to five sessions per IP digest per UTC day, so judges sharing one network should use the existing demo deliberately.
 
 ## Architecture
 
@@ -85,6 +86,7 @@ Every non-obvious `// DECISION:` receipt currently in the implementation is refl
 | [`src/app/viva/page.tsx`](./src/app/viva/page.tsx) | Deliver one externally routed question with empty model input so the voice layer cannot freelance. |
 | [`src/app/viva/page.tsx`](./src/app/viva/page.tsx) | Handle Safari track events with a fallback `MediaStream` and explicit audio playback. |
 | [`src/app/viva/page.tsx`](./src/app/viva/page.tsx) | Exchange SDP directly from the browser using an ephemeral token; audio never crosses the app server. |
+| [`src/lib/student-dossier-token.ts`](./src/lib/student-dossier-token.ts) | Sign the existing dossier ID instead of persisting a second access record, keeping evidence canonical while making the participant route unguessable. |
 
 ### Where I overrode it and why
 
@@ -176,7 +178,7 @@ npm run build
 npm run verify:client-secrets
 ```
 
-- `npm test` covers examiner rationale/routing gates, all five canned answer classes, divergence receipts, rate-limit IP handling, explicit Realtime audio commits, the hardcoded three-minute transport, and three deterministic five-minute pipeline runs.
+- `npm test` covers examiner rationale/routing gates, all five canned answer classes, divergence receipts, pasted-text boundaries and graph scope, signed student dossier links, rate-limit IP handling, explicit Realtime audio commits, the hardcoded three-minute transport, and three deterministic five-minute pipeline runs.
 - `npm run lint` runs TypeScript without emitting files.
 - `npm run build` performs the production Next.js build.
 - `npm run verify:client-secrets` scans built browser assets for the configured server secret values.
@@ -201,7 +203,9 @@ All acceptance commands use only synthetic fixtures. The viva, stored-dossier, r
 - Start the voice demo, grant microphone access, answer one question, and press **Finish answer**.
 - Confirm the student transcript appears, the next spoken question traces to a claim, and a specific rationale appears in the right-hand pane.
 - Let the session run for about two minutes or end it early, then inspect the dossier's defended claims, findings, full transcript, and full decision log.
+- Copy the student dossier link and open it in a private window; confirm it renders the same receipts. Use **Print dossier** and inspect the A4 preview, including both appendices.
 - Repeat through **Use typed answers instead** and confirm the same dossier structure.
+- Paste a 400-word argument under **Defend your own writing**, confirm its graph, and complete a viva whose questions and dossier spans refer to that text. Confirm a sub-250-word paste is stopped before graph or session creation.
 - Open `/triage` and confirm completed vivas are sorted by finding count without turning zero findings into a positive verdict.
 
 ## Production deployment on Vercel

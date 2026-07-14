@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ClaimGraph, ClaimGraphNode } from "@/lib/claim-graph";
 
 type Result = {
@@ -8,6 +8,7 @@ type Result = {
   graph: ClaimGraph;
   persistence: { persisted: boolean; submissionId?: string; graphId?: string };
 };
+type InspectionHandoff = { title: string; sourceKind: "paste"; durationMs: number; result: Result };
 
 const colors = { claim: "#3455db", evidence: "#16836d", citation: "#9b5f18" };
 
@@ -18,9 +19,22 @@ export default function InspectionPage() {
   const [selected, setSelected] = useState<ClaimGraphNode | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [handoff, setHandoff] = useState<InspectionHandoff | null>(null);
+
+  useEffect(() => {
+    const raw = sessionStorage.getItem("eleza:inspection-handoff");
+    if (!raw) return;
+    try {
+      const parsed = JSON.parse(raw) as InspectionHandoff;
+      setHandoff(parsed);
+      setResult(parsed.result);
+    } catch {
+      setError("The pasted argument could not be loaded. Return to the demo and map it again.");
+    }
+  }, []);
 
   async function generate(upload: File) {
-    setLoading(true); setError(""); setResult(null); setSelected(null);
+    setLoading(true); setError(""); setResult(null); setSelected(null); setHandoff(null);
     const form = new FormData(); form.append("file", upload);
     try {
       const response = await fetch("/api/claim-graph", { method: "POST", body: form });
@@ -38,16 +52,17 @@ export default function InspectionPage() {
     setFile(sample); await generate(sample);
   }
 
-  function proceedToViva() {
+  function proceedToViva(deliveryMode: "voice" | "text") {
     if (!result) return;
     sessionStorage.setItem("eleza:viva-handoff", JSON.stringify({
-      title: file?.name.replace(/\.(txt|pdf)$/i, "") ?? "Argumentative submission",
+      title: handoff?.title ?? file?.name.replace(/\.(txt|pdf)$/i, "") ?? "Argumentative submission",
       sourceText: result.sourceText,
       graph: result.graph,
       submissionId: result.persistence.submissionId,
-      durationMs: 300_000,
-      deliveryMode: "voice",
+      durationMs: handoff?.durationMs ?? 300_000,
+      deliveryMode,
       practice: false,
+      sourceKind: handoff?.sourceKind,
     }));
     window.location.assign("/viva");
   }
@@ -60,7 +75,7 @@ export default function InspectionPage() {
       <button className="quiet" disabled={loading} onClick={useFixture}>Use synthetic sample</button>
     </section>
     {error && <p className="error" role="alert">{error}</p>}
-    {result && <div className="phase-toolbar"><span>{result.graph.nodes.length} nodes</span><span>{result.graph.edges.length} edges</span><button onClick={proceedToViva}>Proceed to live viva</button></div>}
+    {result && <div className="phase-toolbar"><span>{result.graph.nodes.length} nodes</span><span>{result.graph.edges.length} edges</span><button onClick={() => proceedToViva("voice")}>Proceed by voice</button><button className="quiet" onClick={() => proceedToViva("text")}>Proceed by text</button></div>}
     {result && <section className="workspace">
       <div className="panel graph-panel"><div className="panel-heading"><div><p className="eyebrow">CLAIM GRAPH</p><h2>{result.graph.nodes.filter((node) => node.type === "claim").length} claims · {result.graph.nodes.length} anchored nodes</h2></div><span className="status">{result.persistence.persisted ? "Saved" : "Local demo"}</span></div>
         <Graph graph={result.graph} selectedId={selected?.id} onSelect={setSelected} />

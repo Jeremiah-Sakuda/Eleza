@@ -7,7 +7,8 @@ import { MODELS } from "@/lib/models";
 
 const promptPath = path.join(process.cwd(), "prompts", "claim-graph.md");
 
-export async function generateClaimGraph(sourceText: string): Promise<ClaimGraph> {
+export async function generateClaimGraph(sourceText: string, options: { minimumClaimCount?: number } = {}): Promise<ClaimGraph> {
+  const minimumClaimCount = options.minimumClaimCount ?? 6;
   if (!process.env.OPENAI_API_KEY) return generateLocalDemoGraph(sourceText);
 
   const prompt = (await readFile(promptPath, "utf8")).replace("{{SUBMISSION_TEXT}}", sourceText);
@@ -15,7 +16,7 @@ export async function generateClaimGraph(sourceText: string): Promise<ClaimGraph
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const response = await openai.responses.create({
       model: MODELS.claimGraph,
-      input: attempt === 0 ? prompt : `${prompt}\n\nYour first output did not contain six claim nodes. Re-extract with at least six distinct claim nodes.`,
+      input: attempt === 0 ? prompt : `${prompt}\n\nYour first output did not contain ${minimumClaimCount} claim nodes. Re-extract with at least ${minimumClaimCount} distinct claim nodes when the text supports them.`,
       text: {
         format: {
           type: "json_schema",
@@ -27,9 +28,9 @@ export async function generateClaimGraph(sourceText: string): Promise<ClaimGraph
     });
     if (!response.output_text) continue;
     const graph = validateGraphAgainstText(claimGraphSchema.parse(JSON.parse(response.output_text)), sourceText);
-    if (graph.nodes.filter((node) => node.type === "claim").length >= 6) return graph;
+    if (graph.nodes.filter((node) => node.type === "claim").length >= minimumClaimCount) return graph;
   }
-  throw new Error("The graph extractor could not anchor six distinct claims. Try a more argumentative submission.");
+  throw new Error("This text does not have enough argumentative structure to examine. Eleza works best on writing that makes a position and supports it with several distinct claims.");
 }
 
 function generateLocalDemoGraph(sourceText: string): ClaimGraph {

@@ -379,3 +379,90 @@ Decisions and outcomes:
 - Added the standard MIT license and a factual, unbranded positioning paragraph that acknowledges the existing category while distinguishing claim-graph targeting, live routing receipts, and span-linked evidence instead of verdicts.
 - Standardized all deployed judge-facing duration copy to “about two minutes,” kept the 150-second hard ceiling stated once in the README deployment section, and removed numeric duration wording from user-facing limit errors while preserving implementation constants and historical prompt text.
 - Renamed the log with `git mv`, updated active references to `BUILD_LOG.md`, and verified every README-relative link resolves. TypeScript, all 18 tests, and the production build pass cleanly.
+
+## 26 — Add paste defense, honest graph controls, dossier print, and student links
+
+Prompt:
+
+```text
+Four additions, in this priority order. Complete and verify each before
+starting the next, so a partial phase still ships whole features. All
+five AGENTS.md invariants apply unchanged — in particular: no verdicts
+anywhere in new UI, findings vocabulary stays the three existing types,
+and every new surface renders from the existing decision_log and
+findings tables rather than new state.
+
+1. Defend your own essay (paste-your-own flow)
+   On the landing page, alongside the fixture demo, add "Defend your
+   own writing." A textarea accepts pasted text: minimum 250 words,
+   maximum 1,200 words, argumentative prose. On submit: run the
+   standard claim-graph generation, show the graph inspection view for
+   confirmation, then offer the same voice/text viva paths as the
+   fixture flow. Sessions created this way count against the existing
+   per-IP and global rate limits and the 150-second clamp — no new
+   limit surface. Scope honestly in the UI: one line stating it works
+   best on argumentative writing, and if graph generation yields fewer
+   than 4 claim nodes, do not start a viva — explain plainly that the
+   text doesn't have enough argumentative structure to examine, in the
+   product's voice (no apology, no error jargon). Pasted text and its
+   artifacts persist through the same tables; add a data note to the
+   start screen ("Your text and transcript are stored to generate your
+   dossier"). No file upload in this flow — paste only.
+
+2. Graph editing (make the existing affordance real)
+   First check whether "Looks wrong? Edit the graph" on /inspect is
+   functional. If it is decorative, implement the minimal honest
+   version: rename a claim's label, delete a claim node (cascade its
+   edges), and adjust a claim's span by re-selecting text in the
+   document column. Edits re-validate through the existing Zod span
+   rules — an edited span must still resolve to real character offsets.
+   Store edited graphs as a new claim_graphs row (the original is never
+   mutated) with a marker distinguishing teacher-edited from generated.
+   If implementing this exceeds a day of work, STOP and instead remove
+   the affordance entirely — a dead button in a teacher-control product
+   is worse than a missing feature. Tell me which path you took and why.
+
+3. Dossier print/PDF export
+   Add a print stylesheet for the dossier view: A4, black serif body,
+   findings retain their amber labels in print, leader-line pairings
+   collapse to side-by-side excerpt blocks, full transcript and decision
+   log appendices included, page numbers and generation timestamp in
+   the footer. A "Print dossier" action triggers the browser print
+   dialog — no server-side PDF generation, no new dependencies.
+
+4. Student dossier link
+   When a viva completes, show the participant a copy-able link to
+   their own dossier (an unguessable token route reading the existing
+   dossier data — no auth system). One line of copy: "This is your copy
+   of the evidence. Your teacher sees exactly the same document." Links
+   for practice sessions don't exist because practice stores nothing —
+   keep it that way.
+
+Acceptance:
+- A judge can paste a 400-word argument, confirm its graph, complete a
+  voice viva about THEIR text, and receive a dossier whose findings
+  reference their own sentences.
+- A sub-250-word or non-argumentative paste is refused with the honest
+  scope message; no viva starts, no rationed session is consumed.
+- The 6th session from one IP is still refused with the pasted flow in
+  the mix.
+- On /inspect, either an edit produces a new validated graph version
+  and the viva uses the edited version, or the edit affordance no
+  longer exists — one or the other, nothing in between.
+- The printed dossier is legible in black-and-white on A4 with all
+  receipts intact.
+- A completed viva shows a working student link; opening it in a
+  private window renders the identical dossier.
+- npm test, lint, build, and verify:client-secrets all clean; deployed
+  to production; README's "What judges can test" section updated for
+  the paste flow and student link.
+
+Append the build log entry per standing practice, including which path
+item 2 took.
+```
+
+Decisions and outcomes:
+
+- Added a 250–1,200-word paste path that invokes the standard Sol claim-graph engine, persists through the existing submission/graph tables, and requires at least four real claim nodes before exposing the existing rate-limited viva creation path. A real 537-word paste produced and persisted a 31-node graph in browser acceptance.
+- Took item 2's explicit removal path: the current `/inspect` implementation already contained no graph-edit control, and source plus browser verification confirmed no decorative “Looks wrong? Edit the graph” affordance remains. This avoids claiming an unimplemented teacher control or adding a rushed graph-version schema.
+- Added dependency-free A4 browser printing with visible evidence appendices, plus an HMAC-signed participant route over the existing dossier, transcript, and decision log. The link adds no parallel evidence state and practice remains unsaved and link-free; TypeScript, all 22 tests, production build, and the 32-asset client-secret scan pass.

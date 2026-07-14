@@ -24,6 +24,7 @@ type Handoff = {
   durationMs?: number;
   deliveryMode?: "voice" | "text";
   practice?: boolean;
+  sourceKind?: "paste";
 };
 type LiveTurn = TranscriptTurn & { targetClaimId?: string; questionKind?: VivaQuestion["kind"] };
 
@@ -481,10 +482,10 @@ export default function VivaPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ transcript: turnsRef.current }),
         });
-        const result = await response.json() as { dossierId?: string; error?: string };
-        if (!response.ok || !result.dossierId) throw new Error(result.error || "Could not generate the viva dossier.");
+        const result = await response.json() as { dossierId?: string; studentDossierPath?: string; error?: string };
+        if (!response.ok || !result.dossierId || !result.studentDossierPath) throw new Error(result.error || "Could not generate the viva dossier.");
         setStatus("complete");
-        window.location.assign(`/dossier/${result.dossierId}`);
+        window.location.assign(result.studentDossierPath);
         return;
       }
       setStatus("complete");
@@ -510,7 +511,7 @@ export default function VivaPage() {
     <main className="viva-main viva-reasoning-layout">
       <section className="transcript-column">
         <p className="column-label">TRANSCRIPT</p>
-        {turns.length === 0 && <div className="viva-ready-copy"><h1>{handoff.practice ? "Warm up first." : "Defend the argument."}</h1><p>The AI examiner asks only questions tied to this essay’s parsed claims. {isTextMode ? "Type each answer and send it when complete." : "Answer out loud, then press Finish answer when you are done."} The session lasts {durationLabel}.</p><p className="viva-start-disclosure">AI INTERACTION · {handoff.practice ? "UNRECORDED PRACTICE" : "TRANSCRIPT AND ROUTING RECEIPTS RECORDED"}</p><button onClick={startLiveSession} disabled={status === "connecting"}>{status === "connecting" ? "Connecting…" : `Start ${handoff.practice ? "warm-up" : "viva"} — ${durationLabel}`}</button></div>}
+        {turns.length === 0 && <div className="viva-ready-copy"><h1>{handoff.practice ? "Warm up first." : "Defend the argument."}</h1><p>The AI examiner asks only questions tied to this essay’s parsed claims. {isTextMode ? "Type each answer and send it when complete." : "Answer out loud, then press Finish answer when you are done."} The session lasts {durationLabel}.</p>{handoff.sourceKind === "paste" && <p className="viva-data-note">Your text and transcript are stored to generate your dossier.</p>}<p className="viva-start-disclosure">AI INTERACTION · {handoff.practice ? "UNRECORDED PRACTICE" : "TRANSCRIPT AND ROUTING RECEIPTS RECORDED"}</p><button onClick={startLiveSession} disabled={status === "connecting"}>{status === "connecting" ? "Connecting…" : `Start ${handoff.practice ? "warm-up" : "viva"} — ${durationLabel}`}</button></div>}
         {turns.map((turn) => <article className={`transcript-turn ${turn.speaker}`} key={turn.id}>
           <time>{formatElapsed(turn.elapsedMs)}</time><div><small>{turn.speaker.toUpperCase()}{turn.targetClaimId ? ` · ${turn.targetClaimId}${turn.questionKind === "bridge" ? " · BRIDGE" : ""}` : ""}</small><p>{turn.text}</p></div>
         </article>)}
