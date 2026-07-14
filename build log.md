@@ -312,3 +312,15 @@ Decisions and outcomes:
 - Confirmed production Supabase health and matched the ephemeral-token SDP exchange to OpenAI's current WebRTC guidance, then added peer/ICE-state diagnostics, a 15-second connection timeout, and Safari-safe remote-audio playback instead of leaving the generic failure opaque.
 - Replaced semantic pause detection with an explicit `Finish answer` control: VAD is disabled, the microphone is muted while questions play, each answer buffer is cleared before listening, and the student's button press commits exactly one answer for transcription.
 - Preserved examiner-owned follow-ups: `action: probe` asks a claim-specific follow-up on the same claim, while schema validation prevents the voice model from inventing or rerouting questions. The updated manual-turn session minted a real 11-second client token; all 18 tests, TypeScript, the production build, and the client-secret bundle scan pass.
+
+## 24 — Harvest the Codex build narrative and complete the README
+
+Prompt:
+
+> Ensure the build log has been updated, then harvest every // DECISION: comment and the git history into a draft README section titled "Building with Codex" — organized as: what Codex built, where I overrode it and why, how GPT-5.6 is used in each of the three systems. Full README pass: setup, env vars, sample data, testing instructions for judges. Confirm npm run build clean and Vercel deploy green.
+
+Decisions and outcomes:
+
+- Harvested all 13 implementation `// DECISION:` receipts and all 15 existing commits into a traceable “Building with Codex” narrative, grouped by shipped system and linked back to the relevant source files, prompts, fixtures, and model-routing configuration.
+- Made the human contribution explicit: the architecture and bias guardrails, manuscript-style UI direction, explicit student-controlled answer boundary, and human-owned production credentials/migrations are recorded as deliberate overrides rather than presented as Codex autonomy.
+- Reworked the complete README around the hosted judge flow, three-system architecture, fresh-clone setup, exact environment exposure, synthetic sample inventory, offline/provider-backed test commands, hosted acceptance, and Vercel reproduction. All 18 tests, TypeScript, `npm run build`, and the 30-asset client-secret scan pass.
