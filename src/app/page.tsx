@@ -34,8 +34,8 @@ export default function Home() {
     setFile(sample); await generate(sample);
   }
 
-  return <main>
-    <header><p className="eyebrow">ELEZA / PRE-VIVA</p><h1>Inspect the argument<br />before the conversation.</h1><p className="lede">Upload an argumentative submission. Eleza maps claims to the exact document spans that will anchor its oral defense.</p></header>
+  return <><nav className="masthead"><div><span className="wordmark">ELEZA</span><i /><span className="mast-title">Claim graph inspection</span></div><span className="stage">PRE-VIVA</span></nav><main>
+    <header><p className="eyebrow">SUBMISSION / ARGUMENT MAP</p><h1>Inspect the argument<br />before the conversation.</h1><p className="lede">Upload an argumentative submission. Eleza maps claims to the exact document spans that will anchor its oral defense.</p></header>
     <section className="upload" aria-label="Submission upload">
       <label className="picker"><input ref={fileInput} type="file" accept=".txt,.pdf,text/plain,application/pdf" onChange={(event) => setFile(event.target.files?.[0] ?? null)} /><span>{file ? file.name : "Choose a .txt or .pdf"}</span></label>
       <button disabled={!file || loading} onClick={() => file && generate(file)}>{loading ? "Mapping argument…" : "Generate claim graph"}</button>
@@ -43,13 +43,13 @@ export default function Home() {
     </section>
     {error && <p className="error" role="alert">{error}</p>}
     {result && <section className="workspace">
-      <div className="panel graph-panel"><div className="panel-heading"><div><p className="eyebrow">CLAIM GRAPH</p><h2>{result.graph.nodes.length} anchored nodes</h2></div><span className="status">{result.persistence.persisted ? "Saved" : "Local demo"}</span></div>
+      <div className="panel graph-panel"><div className="panel-heading"><div><p className="eyebrow">CLAIM GRAPH</p><h2>{result.graph.nodes.filter((node) => node.type === "claim").length} claims · {result.graph.nodes.length} anchored nodes</h2></div><span className="status">{result.persistence.persisted ? "Saved" : "Local demo"}</span></div>
         <Graph graph={result.graph} selectedId={selected?.id} onSelect={setSelected} />
         <p className="legend"><i style={{ background: colors.claim }} /> claim <i style={{ background: colors.evidence }} /> evidence <i style={{ background: colors.citation }} /> citation</p>
       </div>
       <article className="panel document"><div className="panel-heading"><div><p className="eyebrow">SOURCE DOCUMENT</p><h2>Click a node to trace its receipt</h2></div></div><DocumentText text={result.sourceText} node={selected} /></article>
     </section>}
-  </main>;
+  </main></>;
 }
 
 function Graph({ graph, selectedId, onSelect }: { graph: ClaimGraph; selectedId?: string; onSelect: (node: ClaimGraphNode) => void }) {

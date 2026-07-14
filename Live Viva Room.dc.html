@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Instrument+Sans:wght@400;500&family=JetBrains+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; padding: 0; background: #FAFAF8; }
+  a { color: #1E6B4E; text-decoration-color: rgba(30,107,78,0.4); }
+  a:hover { color: #16181D; }
+  @keyframes noteIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+  @keyframes drawLine { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+  @keyframes livePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  @keyframes ruleDraw { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  @media (prefers-reduced-motion: reduce) { * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; } }
+</style>
+</helmet>
+<div style="min-height:100vh; background:#FAFAF8; color:#16181D; font-family:'Instrument Sans',sans-serif;">
+  <div style="border-bottom:1px solid rgba(138,143,152,0.35);">
+    <div style="max-width:1200px; margin:0 auto; padding:18px 40px 0; display:flex; align-items:baseline; gap:20px;">
+      <div style="font-size:12px; letter-spacing:0.24em; color:#16181D;">ELEZA</div>
+      <div style="width:1px; height:13px; background:rgba(138,143,152,0.4); align-self:center;"></div>
+      <div style="font-family:'Spectral',serif; font-style:italic; font-size:17px; color:#16181D; text-wrap:pretty;">Movable type and the standardization of vernacular English</div>
+      <div style="margin-left:auto; display:flex; align-items:center; gap:16px;">
+        <sc-if value="{{ notComplete }}" hint-placeholder-val="{{ true }}">
+          <span style="display:inline-flex; align-items:center; gap:7px; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#1E6B4E;">
+            <span style="width:6px; height:6px; border-radius:50%; background:#1E6B4E; animation:livePulse 2.2s ease-in-out infinite;"></span>
+            LIVE
+          </span>
+        </sc-if>
+        <sc-if value="{{ isComplete }}" hint-placeholder-val="{{ false }}">
+          <span style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#8A8F98;">ENDED</span>
+        </sc-if>
+        <span style="font-family:'JetBrains Mono',monospace; font-size:14px; color:#16181D;">{{ elapsed }}</span>
+      </div>
+    </div>
+    <div style="max-width:1200px; margin:0 auto; padding:8px 40px 12px; font-size:12.5px; color:#8A8F98;">You&rsquo;re speaking with an AI examiner. Everything is logged and shown.</div>
+  </div>
+
+  <div ref="{{ mainRef }}" style="position:relative; max-width:1200px; margin:0 auto; padding:44px 40px 150px; display:grid; grid-template-columns:minmax(0,1fr) 296px; gap:68px; align-items:start;">
+    <svg style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible;">
+      <sc-for list="{{ lines }}" as="ln" hint-placeholder-count="0">
+        <path d="{{ ln.d }}" pathLength="1" style="fill:none; stroke:#1E6B4E; stroke-opacity:0.4; stroke-width:1; stroke-dasharray:1; animation:drawLine 0.7s ease both;"></path>
+      </sc-for>
+      <sc-if value="{{ pendingLine }}" hint-placeholder-val="{{ false }}">
+        <path d="{{ pendingLineD }}" style="fill:none; stroke:#1E6B4E; stroke-opacity:0.55; stroke-width:1; stroke-dasharray:3 4; animation:livePulse 1.4s ease-in-out infinite;"></path>
+      </sc-if>
+    </svg>
+
+    <div>
+      <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#8A8F98; padding-bottom:10px; border-bottom:1px solid rgba(138,143,152,0.28); margin-bottom:6px;">TRANSCRIPT</div>
+      <sc-for list="{{ turns }}" as="t" hint-placeholder-count="4">
+        <div ref="{{ t.ref }}" style="display:grid; grid-template-columns:52px minmax(0,1fr); gap:18px; padding:20px 0;">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#8A8F98; padding-top:3px;">{{ t.time }}</div>
+          <div>
+            <sc-if value="{{ t.isExaminer }}" hint-placeholder-val="{{ false }}">
+              <div style="font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.18em; color:#1E6B4E; margin-bottom:8px;">EXAMINER</div>
+              <div style="font-family:'JetBrains Mono',monospace; font-size:13.5px; line-height:1.8; color:#1E6B4E; text-wrap:pretty;">{{ t.text }}</div>
+            </sc-if>
+            <sc-if value="{{ t.isStudent }}" hint-placeholder-val="{{ true }}">
+              <div style="font-size:9.5px; letter-spacing:0.18em; color:#8A8F98; margin-bottom:8px;">STUDENT</div>
+              <div style="font-family:'Spectral',serif; font-size:17.5px; line-height:1.7; color:#16181D; text-wrap:pretty;">{{ t.text }}</div>
+            </sc-if>
+          </div>
+        </div>
+      </sc-for>
+      <sc-if value="{{ isComplete }}" hint-placeholder-val="{{ false }}">
+        <div style="margin-top:32px;">
+          <div style="height:1px; background:#8A8F98; opacity:0.6; transform-origin:left; animation:ruleDraw 0.9s ease both;"></div>
+          <div style="margin-top:18px; font-family:'JetBrains Mono',monospace; font-size:13px; color:#1E6B4E;">Viva complete. Preparing your dossier.</div>
+        </div>
+      </sc-if>
+    </div>
+
+    <div style="position:relative; min-height:400px;">
+      <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#8A8F98; padding-bottom:10px; border-bottom:1px solid rgba(138,143,152,0.28);">EXAMINER &mdash; LIVE REASONING</div>
+      <sc-for list="{{ notes }}" as="n" hint-placeholder-count="0">
+        <div ref="{{ n.ref }}" style="position:absolute; top:{{ n.top }}px; left:0; right:0; animation:noteIn 0.5s ease both;">
+          <sc-if value="{{ n.isNormal }}" hint-placeholder-val="{{ true }}">
+            <div style="font-family:'JetBrains Mono',monospace; font-size:10px; color:#8A8F98; margin-bottom:5px;">{{ n.time }}</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:12px; line-height:1.65; color:#1E6B4E; text-wrap:pretty;">{{ n.text }}</div>
+          </sc-if>
+          <sc-if value="{{ n.isPending }}" hint-placeholder-val="{{ false }}">
+            <div style="font-family:'JetBrains Mono',monospace; font-size:10px; color:#8A8F98; margin-bottom:5px;">deciding</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:14px; letter-spacing:0.3em; color:#1E6B4E; animation:livePulse 1.4s ease-in-out infinite;">&middot;&middot;&middot;</div>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="position:fixed; left:0; right:0; bottom:0; background:rgba(250,250,248,0.96); backdrop-filter:blur(5px); border-top:1px solid rgba(138,143,152,0.35);">
+    <div style="max-width:1200px; margin:0 auto; padding:14px 40px; display:flex; align-items:center; justify-content:space-between;">
+      <div style="display:flex; align-items:center; gap:30px; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.14em;">
+        <span style="color:{{ listeningColor }}; transition:color 0.3s;">LISTENING</span>
+        <span style="width:1px; height:11px; background:rgba(138,143,152,0.35);"></span>
+        <span style="color:{{ speakingColor }}; transition:color 0.3s;">SPEAKING</span>
+        <span style="width:1px; height:11px; background:rgba(138,143,152,0.35);"></span>
+        <span style="color:{{ thinkingColor }}; transition:color 0.3s;">THINKING</span>
+      </div>
+      <sc-if value="{{ notComplete }}" hint-placeholder-val="{{ true }}">
+        <button onClick="{{ endViva }}" style="font-family:'Instrument Sans',sans-serif; font-size:13px; color:#8A8F98; background:none; border:1px solid rgba(138,143,152,0.45); border-radius:2px; padding:7px 16px; cursor:pointer;" style-hover="color:#16181D; border-color:#8A8F98;">End viva early</button>
+      </sc-if>
+      <sc-if value="{{ isComplete }}" hint-placeholder-val="{{ false }}">
+        <span style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#8A8F98;">Session ended &middot; {{ elapsed }}</span>
+      </sc-if>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;vivaState&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;listening&quot;,&quot;options&quot;:[&quot;listening&quot;,&quot;speaking&quot;,&quot;thinking&quot;,&quot;complete&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Session state&quot;},&quot;clockRunning&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Session state&quot;}}">
+class Component extends DCLogic {
+  state = { seconds: 192, ended: false, tops: null, lines: [], pendingLineD: null };
+
+  constructor(props) {
+    super(props);
+    this.mainRef = React.createRef();
+    this._refs = {};
+    this.turnsData = [
+      { id: 't1', who: 'e', time: '00:04', text: 'Your essay\u2019s central claim is that English spelling standardized through print-shop economics rather than deliberate reform. Before we look at evidence \u2014 state that mechanism in your own words.' },
+      { id: 't2', who: 's', time: '00:21', text: 'Compositors were paid by the page, and resetting type cost money. A shop settles on one spelling per word because variation slows the line of work \u2014 it\u2019s cheaper to be consistent. The standard comes out of the workflow, not from anyone deciding English should look a certain way.' },
+      { id: 't3', who: 'e', time: '00:58', text: 'That covers the mechanism. Your third claim goes further \u2014 that Caxton\u2019s Chancery spellings spread because of print, not because of the court\u2019s prestige. What in your evidence separates those two causes?' },
+      { id: 't4', who: 's', time: '01:16', text: 'The prestige explanation would predict spellings spreading through official documents first. But the pattern I cited from Fisher shows the printed forms turning up in private letters within a generation \u2014 faster than court usage moved.' },
+      { id: 't5', who: 'e', time: '02:03', text: 'You attribute that letters evidence to Fisher, chapter two. Fisher\u2019s second chapter concerns Chancery scribes, not private letters. Where does the letters corpus actually come from?' },
+      { id: 't6', who: 's', time: '02:24', text: '\u2026I think that may have come from the Eisenstein reading, actually \u2014 the section on vernacular diffusion. The Fisher citation covers the scribal side.' }
+    ];
+    this.notesData = [
+      { id: 'a', anchor: 't2', dy: 38, time: '00:52', text: 'Mechanism stated without the essay\u2019s wording \u2014 compositor economics, matches CLAIM 01 as parsed. Accepting. Moving up the dependency to CLAIM 03.' },
+      { id: 'b', anchor: 't4', dy: 38, time: '01:58', text: 'Restated the conclusion of CLAIM 03; the separating work is being done by the Fisher citation, not the answer. Testing the citation.' },
+      { id: 'c', anchor: 't6', dy: 38, time: '02:47', text: 'Attribution corrected under questioning \u2014 letters corpus reassigned from Fisher to Eisenstein. Logged for the dossier. Not probing further.' }
+    ];
+  }
+
+  getRef(k) { if (!this._refs[k]) this._refs[k] = React.createRef(); return this._refs[k]; }
+  vivaState() { return this.state.ended ? 'complete' : (this.props.vivaState ?? 'listening'); }
+
+  activeNotes() {
+    const vs = this.vivaState();
+    const base = this.notesData.map(n => ({ ...n, pending: false }));
+    if (vs === 'thinking') base.push({ id: 'pend', anchor: 't6', dy: 38, pending: true });
+    return base;
+  }
+
+  measure = () => {
+    const main = this.mainRef.current;
+    if (!main) return;
+    const mRect = main.getBoundingClientRect();
+    const marginCol = main.lastElementChild;
+    const colRect = marginCol ? marginCol.getBoundingClientRect() : mRect;
+    const colTop = colRect.top - mRect.top;
+    const tops = {}, lines = [];
+    let pendingLineD = null, cursor = 44;
+    for (const n of this.activeNotes()) {
+      const a = this._refs[n.anchor] && this._refs[n.anchor].current;
+      const el = this._refs['note-' + n.id] && this._refs['note-' + n.id].current;
+      if (!a || !el) continue;
+      const aR = a.getBoundingClientRect();
+      const anchorY = aR.top - mRect.top + n.dy;
+      let top = anchorY - colTop - 8;
+      if (top < cursor) top = cursor;
+      tops[n.id] = top;
+      cursor = top + el.offsetHeight + 22;
+      const noteX = colRect.left - mRect.left - 14;
+      const noteY = colTop + top + 8;
+      const anchorX = aR.right - mRect.left + 8;
+      const midX = anchorX + 26;
+      if (n.pending) pendingLineD = 'M ' + noteX + ' ' + noteY + ' l -30 0';
+      else lines.push({ d: 'M ' + anchorX + ' ' + anchorY + ' L ' + midX + ' ' + anchorY + ' L ' + noteX + ' ' + noteY });
+    }
+    const prev = JSON.stringify([this.state.tops, this.state.lines, this.state.pendingLineD]);
+    const next = JSON.stringify([tops, lines, pendingLineD]);
+    if (prev !== next) this.setState({ tops, lines, pendingLineD });
+  };
+
+  componentDidMount() {
+    this.measure();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.measure());
+    this._onResize = () => this.measure();
+    window.addEventListener('resize', this._onResize);
+    this._timer = setInterval(() => {
+      if ((this.props.clockRunning ?? true) && this.vivaState() !== 'complete') this.setState(s => ({ seconds: s.seconds + 1 }));
+    }, 1000);
+  }
+
+  componentWillUnmount() {
+    clearInterval(this._timer);
+    window.removeEventListener('resize', this._onResize);
+  }
+
+  componentDidUpdate(prevProps, prevState) {
+    if (prevProps.vivaState !== this.props.vivaState || prevState.ended !== this.state.ended) {
+      requestAnimationFrame(() => this.measure());
+    }
+  }
+
+  renderVals() {
+    const vs = this.vivaState();
+    const isComplete = vs === 'complete';
+    const mm = Math.floor(this.state.seconds / 60), ss = this.state.seconds % 60;
+    const active = '#1E6B4E', idle = 'rgba(138,143,152,0.5)';
+    const notes = this.activeNotes().map((n, i) => ({
+      ...n,
+      ref: this.getRef('note-' + n.id),
+      top: (this.state.tops && this.state.tops[n.id] != null) ? this.state.tops[n.id] : 120 + i * 130,
+      isPending: n.pending,
+      isNormal: !n.pending
+    }));
+    return {
+      mainRef: this.mainRef,
+      elapsed: String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0'),
+      turns: this.turnsData.map(t => ({ ...t, ref: this.getRef(t.id), isExaminer: t.who === 'e', isStudent: t.who === 's' })),
+      notes,
+      lines: this.state.lines,
+      pendingLine: !!this.state.pendingLineD,
+      pendingLineD: this.state.pendingLineD || '',
+      isComplete,
+      notComplete: !isComplete,
+      listeningColor: vs === 'listening' ? active : idle,
+      speakingColor: vs === 'speaking' ? active : idle,
+      thinkingColor: vs === 'thinking' ? active : idle,
+      endViva: () => this.setState({ ended: true })
+    };
+  }
+}
+</script>
+</body>
+</html>

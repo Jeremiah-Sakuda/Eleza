@@ -3,6 +3,7 @@ import path from "node:path";
 import OpenAI from "openai";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { claimGraphSchema, type ClaimGraph, validateGraphAgainstText } from "@/lib/claim-graph";
+import { MODELS } from "@/lib/models";
 
 const promptPath = path.join(process.cwd(), "prompts", "claim-graph.md");
 
@@ -11,21 +12,25 @@ export async function generateClaimGraph(sourceText: string): Promise<ClaimGraph
 
   const prompt = (await readFile(promptPath, "utf8")).replace("{{SUBMISSION_TEXT}}", sourceText);
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  const response = await openai.responses.create({
-    model: "gpt-5.6",
-    input: prompt,
-    text: {
-      format: {
-        type: "json_schema",
-        name: "claim_graph",
-        strict: true,
-        schema: zodToJsonSchema(claimGraphSchema, { $refStrategy: "none" }),
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const response = await openai.responses.create({
+      model: MODELS.claimGraph,
+      temperature: 0,
+      input: attempt === 0 ? prompt : `${prompt}\n\nYour first output did not contain six claim nodes. Re-extract with at least six distinct claim nodes.`,
+      text: {
+        format: {
+          type: "json_schema",
+          name: "claim_graph",
+          strict: true,
+          schema: zodToJsonSchema(claimGraphSchema, { $refStrategy: "none" }),
+        },
       },
-    },
-  });
-  if (!response.output_text) throw new Error("The graph extractor returned no structured output.");
-  const graph = claimGraphSchema.parse(JSON.parse(response.output_text));
-  return validateGraphAgainstText(graph, sourceText);
+    });
+    if (!response.output_text) continue;
+    const graph = validateGraphAgainstText(claimGraphSchema.parse(JSON.parse(response.output_text)), sourceText);
+    if (graph.nodes.filter((node) => node.type === "claim").length >= 6) return graph;
+  }
+  throw new Error("The graph extractor could not anchor six distinct claims. Try a more argumentative submission.");
 }
 
 function generateLocalDemoGraph(sourceText: string): ClaimGraph {
@@ -34,7 +39,7 @@ function generateLocalDemoGraph(sourceText: string): ClaimGraph {
     text: match[0], start: match.index ?? 0,
   }));
   const candidates = paragraphs.slice(0, 6);
-  const nodes = candidates.map((paragraph, index) => {
+  const claimNodes = candidates.map((paragraph, index) => {
     const sentence = paragraph.text.match(/[^.!?]+[.!?]/)?.[0]?.trim() ?? paragraph.text.trim();
     const start = paragraph.start + paragraph.text.indexOf(sentence);
     return {
@@ -44,6 +49,27 @@ function generateLocalDemoGraph(sourceText: string): ClaimGraph {
       source_span: { start, end: start + sentence.length },
     };
   });
-  const edges = nodes.slice(1).map((node, index) => ({ source: node.id, target: "claim_1", type: "supports" as const }));
-  return validateGraphAgainstText({ nodes, edges }, sourceText);
+  const evidenceNodes = candidates.flatMap((paragraph, index) => {
+    const sentences = paragraph.text.match(/[^.!?]+[.!?]/g)?.map((sentence) => sentence.trim()) ?? [];
+    const sentence = sentences[1];
+    if (!sentence) return [];
+    const start = paragraph.start + paragraph.text.indexOf(sentence);
+    return [{
+      id: `evidence_${index + 1}`,
+      type: "evidence" as const,
+      label: sentence.slice(0, 150),
+      source_span: { start, end: start + sentence.length },
+    }];
+  });
+  const claimEdges = claimNodes.slice(1).map((node) => ({
+    source: node.id,
+    target: "claim_1",
+    type: node.id === "claim_5" ? "rebuts" as const : "supports" as const,
+  }));
+  const evidenceEdges = evidenceNodes.map((node) => ({
+    source: node.id,
+    target: node.id.replace("evidence", "claim"),
+    type: "supports" as const,
+  }));
+  return validateGraphAgainstText({ nodes: [...claimNodes, ...evidenceNodes], edges: [...claimEdges, ...evidenceEdges] }, sourceText);
 }
