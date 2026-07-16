@@ -1,8 +1,10 @@
+// DECISION: do not retain viva audio; timestamped transcripts preserve evidentiary receipts without surveillance-weight biometric residue.
 import { z } from "zod";
 import { claimGraphSchema, type ClaimGraph } from "@/lib/claim-graph";
 import { decisionLogEntrySchema, serviceClient, type DecisionLogEntry } from "@/lib/decision-log";
 import { analyzeDivergence, transcriptTurnSchema, type TranscriptTurnInput } from "@/lib/divergence";
 import { divergenceAnalysisSchema, type DivergenceAnalysis } from "@/lib/divergence-schema";
+import { attachFindingFollowUps, generateFindingFollowUps } from "@/lib/follow-up";
 
 const persistedTurnSchema = z.object({
   id: z.string().uuid(),
@@ -38,8 +40,17 @@ export type TriageRow = {
   title: string;
   durationMs: number;
   findingCount: number;
+  findingTypeSummary: string;
   completedAt: string;
 };
+
+export function formatFindingTypeSummary(findings: DivergenceAnalysis["findings"]) {
+  const order = ["cannot_reconstruct", "mechanism_gap", "inconsistency"] as const;
+  return order.map((type) => ({ type, count: findings.filter((finding) => finding.type === type).length }))
+    .filter(({ count }) => count > 0)
+    .map(({ type, count }) => `${count} ${type}`)
+    .join(", ");
+}
 
 export async function persistTranscript(sessionId: string, rawTurns: TranscriptTurnInput[]) {
   const turns = z.array(transcriptTurnSchema).parse(rawTurns);
@@ -87,11 +98,16 @@ export async function generateAndPersistDossier(sessionId: string) {
   }));
   const decisionLog = z.array(decisionLogEntrySchema).parse(logResult.data);
   const result = await analyzeDivergence({ source_text: sourceText, graph, transcript, decision_log: decisionLog });
+  const followUps = await generateFindingFollowUps(result.analysis.findings, graph);
+  const analysis = divergenceAnalysisSchema.parse({
+    ...result.analysis,
+    findings: attachFindingFollowUps(result.analysis.findings, followUps),
+  });
 
   const saved = await supabase.from("dossiers").insert({
     viva_session_id: sessionId,
-    prompt_version: "divergence-v1",
-    analysis: result.analysis,
+    prompt_version: "divergence-v1+follow-up-v1",
+    analysis,
     analysis_attempts: result.attempts,
   }).select("id").single();
   if (saved.error) throw new Error(`Could not save dossier: ${saved.error.message}`);
@@ -161,6 +177,7 @@ export async function listDossierTriage(): Promise<TriageRow[]> {
       title: z.string().nullable().parse(session?.title ?? null) ?? "Argumentative submission",
       durationMs: durations.get(sessionId) ?? 0,
       findingCount: analysis.findings.length,
+      findingTypeSummary: formatFindingTypeSummary(analysis.findings),
       completedAt: z.string().nullable().parse(session?.completed_at ?? null) ?? z.string().parse(row.created_at),
     };
   }).sort((a, b) => b.findingCount - a.findingCount || b.completedAt.localeCompare(a.completedAt));

@@ -11,13 +11,17 @@ export const documentSpanSchema = z.object({
   end: z.number().int().positive(),
 });
 
-export const divergenceFindingSchema = z.object({
+export const divergenceFindingBaseSchema = z.object({
   timestamp: z.number().int().nonnegative(),
   transcript_excerpt: z.string().min(1).max(600),
   claim_id: z.string().min(1),
   doc_span: documentSpanSchema,
   type: divergenceTypeSchema,
   note: z.string().min(12).max(800),
+});
+
+export const divergenceFindingSchema = divergenceFindingBaseSchema.extend({
+  follow_up_questions: z.array(z.string().min(10).max(400)).min(2).max(3).optional().transform((questions) => questions ?? []),
 });
 
 export const defendedClaimSchema = z.object({
@@ -30,6 +34,11 @@ export const defendedClaimSchema = z.object({
 export const divergenceAnalysisSchema = z.object({
   claims_defended: z.array(defendedClaimSchema),
   findings: z.array(divergenceFindingSchema),
+});
+
+export const divergenceModelAnalysisSchema = z.object({
+  claims_defended: z.array(defendedClaimSchema),
+  findings: z.array(divergenceFindingBaseSchema),
 });
 
 export type DivergenceFinding = z.infer<typeof divergenceFindingSchema>;

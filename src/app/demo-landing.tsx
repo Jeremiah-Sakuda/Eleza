@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ClaimGraph } from "@/lib/claim-graph";
 import { countWords, PASTE_MAX_WORDS, PASTE_MIN_WORDS } from "@/lib/paste-submission";
 
@@ -10,7 +10,13 @@ export default function DemoLanding({ judge, practice }: { judge: DemoFixture; p
   const [pastedText, setPastedText] = useState("");
   const [pasteError, setPasteError] = useState("");
   const [mappingPaste, setMappingPaste] = useState(false);
+  const [judgeAccessCode, setJudgeAccessCode] = useState("");
   const pastedWordCount = countWords(pastedText);
+
+  useEffect(() => {
+    const query = new URLSearchParams(window.location.search);
+    setJudgeAccessCode(query.get("judge_code") ?? query.get("judge") ?? "");
+  }, []);
 
   function start(fixture: DemoFixture, options: { practice: boolean; deliveryMode: "voice" | "text" }) {
     sessionStorage.setItem("eleza:viva-handoff", JSON.stringify({
@@ -18,6 +24,7 @@ export default function DemoLanding({ judge, practice }: { judge: DemoFixture; p
       practice: options.practice,
       deliveryMode: options.deliveryMode,
       durationMs: 120_000,
+      judgeAccessCode: judgeAccessCode || undefined,
     }));
     window.location.assign("/viva");
   }
@@ -41,6 +48,7 @@ export default function DemoLanding({ judge, practice }: { judge: DemoFixture; p
         title: "Pasted argumentative writing",
         sourceKind: "paste",
         durationMs: 120_000,
+        judgeAccessCode: judgeAccessCode || undefined,
         result,
       }));
       window.location.assign("/inspect");
@@ -54,7 +62,7 @@ export default function DemoLanding({ judge, practice }: { judge: DemoFixture; p
     <nav className="judge-nav"><a href="/" className="wordmark">ELEZA</a><div><a href="/triage">Teacher triage</a><span>NO LOGIN · ABOUT TWO MINUTES</span></div></nav>
     <header className="judge-hero">
       <p className="eyebrow">RECEIPTS, NOT VERDICTS</p>
-      <h1>Students can fake the essay.<br />Not the conversation.</h1>
+      <h1>An essay can&apos;t tell you what a student understands.<br />A conversation can.</h1>
       <p>Eleza holds a short oral defense against a submission’s exact claims, shows why it routes every question, and returns evidence instead of a score.</p>
     </header>
 
@@ -73,6 +81,7 @@ export default function DemoLanding({ judge, practice }: { judge: DemoFixture; p
         <div className="judge-card-rule" />
         <button className="judge-practice-button" onClick={() => start(practice, { practice: true, deliveryMode: "voice" })}>Try an unrecorded warm-up</button>
         <small>Practice uses a different sample and saves no transcript, decisions, or dossier.</small>
+        <label className="judge-access-field">JUDGE ACCESS CODE<input type="password" autoComplete="off" value={judgeAccessCode} onChange={(event) => setJudgeAccessCode(event.target.value)} placeholder="Optional" /></label>
       </aside>
     </main>
 

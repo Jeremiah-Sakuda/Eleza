@@ -1,6 +1,6 @@
 # Eleza
 
-Eleza is a transparent oral-defense tool for argumentative writing. It parses a submission into claim spans, conducts an examiner-routed viva, and returns a dossier of transcript-to-document receipts. It does not produce authenticity scores, pass/fail labels, or verdicts.
+An essay can't tell you what a student understands. A conversation can. Eleza is a transparent oral-defense tool for argumentative writing: it parses a submission into claim spans, conducts an examiner-routed viva, and returns a dossier of transcript-to-document receipts. It does not produce authenticity scores, pass/fail labels, or verdicts.
 
 Eleza improves on existing oral-assessment concepts rather than claiming to create the category. Research deployments and commercial tools already generate viva questions from student submissions, but their evaluation is generally hidden and returned as grades or flags. Eleza instead targets a structured claim graph of the specific document and renders the examiner's routing rationale live during the viva. Its dossier returns span-linked evidence for a teacher to adjudicate instead of a verdict.
 
@@ -10,12 +10,16 @@ Eleza improves on existing oral-assessment concepts rather than claiming to crea
 
 The zero-login demo starts with a synthetic 537-word essay and supports four paths:
 
+Real vivas are teacher-configurable at 5–8 minutes; the hosted demo is capped at about two minutes as a public-cost control, not as an assessment-design limit.
+
 1. **Voice viva:** select **Defend this essay — about two minutes**, grant microphone access, answer aloud, and press **Finish answer** after each response. The transcript and examiner routing receipts appear live; a dossier is generated when the session ends.
 2. **Text accessibility mode:** select **Use typed answers instead**. Typed responses pass through the same examiner, decision log, divergence analysis, and dossier path as voice responses.
 3. **Unrecorded practice:** select **Try an unrecorded warm-up** for a second synthetic essay. Practice creates no saved transcript, decisions, or dossier.
 4. **Defend your own writing:** paste 250–1,200 words of argumentative prose, confirm the generated claim graph, then choose the same voice or typed viva. Text without at least four claim nodes is stopped before session creation, so it does not consume the daily allowance.
 
 Completed recorded vivas open an unguessable student dossier link that can be copied and opened in a private window; it renders the same evidence document available to the teacher. Dossiers can also be printed from the browser with their transcript and decision-log appendices intact. The claim-graph upload and inspection flow is available at [`/inspect`](https://eleza-drab.vercel.app/inspect), and the findings-sorted teacher dossier list is at [`/triage`](https://eleza-drab.vercel.app/triage). Public session creation is limited to five sessions per IP digest per UTC day, so judges sharing one network should use the existing demo deliberately.
+
+During the viva, the understanding map shows claim coverage directly from the append-only decisions. Each rationale has **Question this decision**, a three-turn ephemeral exchange grounded in that decision, claim, and transcript receipt. A configured judge access code may be entered in the optional landing field to use the separate judge-capacity tier; the README deliberately does not publish its value.
 
 ## Architecture
 
@@ -29,9 +33,11 @@ The architecture has five non-negotiable invariants:
 
 - The Realtime voice model speaks externally routed questions; the GPT-5.6 examiner chooses every next move.
 - Every examiner decision is one append-only log entry rendered by both the live pane and dossier.
-- A rationale is rejected unless it cites the target claim ID and quotes the student's answer exactly.
+- A rationale is rejected unless it cites the target claim ID and quotes an exact transcript substring of at least five words or 25 contiguous characters.
 - Divergence analysis is content-reconstruction only; written-versus-spoken register comparison is excluded for bias reasons.
 - Eleza presents evidence, never an authenticity score or verdict. Humans decide.
+
+What Eleza deliberately does not do: retain audio recordings. Timestamped transcripts preserve the evidentiary value without leaving biometric voice residue or adding surveillance-weight infrastructure.
 
 ## Building with Codex
 
@@ -79,6 +85,7 @@ Every non-obvious `// DECISION:` receipt currently in the implementation is refl
 | [`src/app/api/viva/turn/route.ts`](./src/app/api/viva/turn/route.ts) | Persist an accepted examiner decision before exposing it to the UI, preventing parallel reasoning state. |
 | [`src/lib/divergence.ts`](./src/lib/divergence.ts) | Send source evidence once and return compact classifications; transcript and decision records remain canonical. |
 | [`src/lib/dossier-store.ts`](./src/lib/dossier-store.ts) | Ignore duplicate sequence receipts so a failed dossier request can be retried without rewriting transcript history. |
+| [`src/lib/dossier-store.ts`](./src/lib/dossier-store.ts) | Retain timestamped transcripts but no viva audio, preserving evidence without biometric residue. |
 | [`src/lib/rate-limit.ts`](./src/lib/rate-limit.ts) | Store only a service-key-salted IP digest; raw visitor IP addresses never enter Postgres. |
 | [`src/app/api/realtime/token/route.ts`](./src/app/api/realtime/token/route.ts) | Explicitly request OpenAI's supported 10-second client-token minimum instead of accepting the longer default. |
 | [`src/app/api/realtime/token/route.ts`](./src/app/api/realtime/token/route.ts) | Disable VAD so thoughtful pauses are preserved and one explicit student action defines each examiner answer. |
@@ -87,13 +94,14 @@ Every non-obvious `// DECISION:` receipt currently in the implementation is refl
 | [`src/app/viva/page.tsx`](./src/app/viva/page.tsx) | Handle Safari track events with a fallback `MediaStream` and explicit audio playback. |
 | [`src/app/viva/page.tsx`](./src/app/viva/page.tsx) | Exchange SDP directly from the browser using an ephemeral token; audio never crosses the app server. |
 | [`src/lib/student-dossier-token.ts`](./src/lib/student-dossier-token.ts) | Sign the existing dossier ID instead of persisting a second access record, keeping evidence canonical while making the participant route unguessable. |
+| [`src/lib/meta-viva.ts`](./src/lib/meta-viva.ts) | Replace any ungrounded meta-viva output with a record-limited statement instead of retrying into confabulation. |
 
 ### Where I overrode it and why
 
 The human contribution was not a final polish pass; it set the product's consequential boundaries and corrected interaction choices as the demo became real:
 
 - **Architecture and model authority:** I required “the voice model talks; the examiner decides,” one append-only decision log, a schema-level rationale gate, no register comparison, and no verdicts. These constraints prevent a fast implementation from quietly turning into an opaque AI grader.
-- **Visual direction:** I supplied the first HTML reference and later the `UI_design` pages. I rejected a physics-simulation node cloud in favor of a manuscript-like, document-first claim index, and rejected dashboard decoration in favor of a quiet teacher triage table. The reason was evidentiary clarity: the essay and receipts must remain primary.
+- **Visual direction:** I supplied the first HTML reference and later the [`design`](./design) pages. I rejected a physics-simulation node cloud in favor of a manuscript-like, document-first claim index, and rejected dashboard decoration in favor of a quiet teacher triage table. The reason was evidentiary clarity: the essay and receipts must remain primary.
 - **Turn completion:** the first voice implementation used semantic pause detection. After using it, I asked for a student-controlled end-turn button. Codex replaced VAD boundaries with **Finish answer** so a student can pause to think without prematurely triggering the examiner.
 - **Operational authority:** Codex wrote migrations, deployment configuration, and verification scripts, but I applied the Supabase migrations and supplied dashboard secrets. Those operations remain human-controlled because Codex should not assume authority over external credentials or production accounts.
 
@@ -106,8 +114,8 @@ Model routing is centralized in [`src/lib/models.ts`](./src/lib/models.ts); Luna
 | System | Model | Use |
 |---|---|---|
 | Claim graph engine | `gpt-5.6-sol` | Runs once per submission with [`prompts/claim-graph.md`](./prompts/claim-graph.md). Strict structured output produces claim/evidence/citation nodes and `supports`/`rebuts`/`depends_on` edges; Zod then validates IDs and real character spans before persistence. Sol is used because every downstream question inherits the graph's granularity. |
-| Live viva examiner | `gpt-5.6-terra`, with `gpt-5.6-sol` for gate retries | Receives a stable prompt-plus-graph prefix and the latest completed answer as a fresh suffix. It emits the answer summary, assessment, action, target claim, next claim, next question, and rationale. Dynamic Zod validation rejects any rationale that omits the claim ID or an exact answer quote, and rejects invalid probe/branch/advance routing. The separate `gpt-realtime-2.1` session only voices the routed question. |
-| Post-viva divergence | `gpt-5.6-sol` | Runs asynchronously with [`prompts/divergence.md`](./prompts/divergence.md) after the viva. It classifies content-reconstruction differences into exactly three allowed types and returns timestamp/excerpt/claim/span receipts. Semantic validation rejects invented timestamps, excerpts, claim IDs, or document spans before dossier persistence. |
+| Live viva examiner | `gpt-5.6-terra`, with `gpt-5.6-sol` for gate retries | Receives a stable prompt-plus-graph prefix and the latest completed answer as a fresh suffix. It emits the answer summary, assessment, action, target claim, next claim, next question, and rationale. Dynamic Zod validation rejects any rationale that omits the claim ID or an exact transcript substring of at least five words or 25 contiguous characters, and rejects invalid probe/branch/advance routing. Terra also powers the ephemeral [`prompts/meta-viva.md`](./prompts/meta-viva.md) exchange, whose answers must cite that decision's claim and rationale. The separate `gpt-realtime-2.1` session only voices the routed question. |
+| Post-viva divergence | `gpt-5.6-sol` | Runs asynchronously with [`prompts/divergence.md`](./prompts/divergence.md) after the viva. It classifies content-reconstruction differences into exactly three allowed types and returns timestamp/excerpt/claim/span receipts. Semantic validation rejects invented timestamps, excerpts, claim IDs, or document spans before dossier persistence. A second Sol structured call using [`prompts/follow-up.md`](./prompts/follow-up.md) produces two or three claim-linked prompts for the teacher's later conversation. |
 
 ## Local setup
 
@@ -130,6 +138,7 @@ Apply every SQL file in [`supabase/migrations`](./supabase/migrations) in filena
 2. `002_live_viva.sql`
 3. `003_dossiers.sql`
 4. `004_demo_rate_limits.sql`
+5. `005_judge_access.sql`
 
 Then start the app:
 
@@ -149,12 +158,16 @@ Copy [`.env.example`](./.env.example) to `.env.local`. `.env.local` is gitignore
 | `NEXT_PUBLIC_SUPABASE_URL` | Yes | Public configuration | Identifies the Supabase project. |
 | `SUPABASE_SERVICE_ROLE_KEY` | Yes | Server only | Server persistence, RPC rate limiting, health checks, and the salt used for privacy-preserving IP hashes. |
 | `DEMO_GLOBAL_DAILY_CAP` | No | Server configuration | Global daily session/token capacity; defaults to `200`. |
+| `JUDGE_ACCESS_CODE` | No | Server only | Enables the judge-only capacity tier when a matching code is supplied at session creation. Never prefix it with `NEXT_PUBLIC_`. |
+| `JUDGE_DAILY_CAP` | No | Server configuration | Separate daily session/token capacity for valid judge-code requests; defaults to `50`. |
 
 ```dotenv
 OPENAI_API_KEY=...
 NEXT_PUBLIC_SUPABASE_URL=...
 SUPABASE_SERVICE_ROLE_KEY=...
 DEMO_GLOBAL_DAILY_CAP=200
+JUDGE_ACCESS_CODE=...
+JUDGE_DAILY_CAP=50
 ```
 
 ## Sample data
@@ -178,7 +191,7 @@ npm run build
 npm run verify:client-secrets
 ```
 
-- `npm test` covers examiner rationale/routing gates, all five canned answer classes, divergence receipts, pasted-text boundaries and graph scope, signed student dossier links, rate-limit IP handling, explicit Realtime audio commits, the hardcoded three-minute transport, and three deterministic five-minute pipeline runs.
+- `npm test` covers examiner rationale/routing gates, all five canned answer classes, grounded meta-viva limits, decision-log understanding-map state, divergence and teacher-follow-up receipts, triage summaries, pasted-text boundaries, signed student dossier links, judge-cap helpers, explicit Realtime audio commits, the hardcoded three-minute transport, and three deterministic five-minute pipeline runs.
 - `npm run lint` runs TypeScript without emitting files.
 - `npm run build` performs the production Next.js build.
 - `npm run verify:client-secrets` scans built browser assets for the configured server secret values.
@@ -202,17 +215,20 @@ All acceptance commands use only synthetic fixtures. The viva, stored-dossier, r
 - Open the HTTPS URL in current Chrome or Safari on a desktop or phone.
 - Start the voice demo, grant microphone access, answer one question, and press **Finish answer**.
 - Confirm the student transcript appears, the next spoken question traces to a claim, and a specific rationale appears in the right-hand pane.
+- Confirm the understanding map updates as decisions land. Open **Question this decision**, ask why the route was chosen, then ask about something outside the supplied record; the first answer must cite the claim and rationale, and the second must state the record's limit.
 - Let the session run for about two minutes or end it early, then inspect the dossier's defended claims, findings, full transcript, and full decision log.
+- Confirm the dossier begins with the final understanding map, each finding includes a neutral **For your conversation** block, and appendix rationales expose the same meta-viva action.
 - Copy the student dossier link and open it in a private window; confirm it renders the same receipts. Use **Print dossier** and inspect the A4 preview, including both appendices.
 - Repeat through **Use typed answers instead** and confirm the same dossier structure.
 - Paste a 400-word argument under **Defend your own writing**, confirm its graph, and complete a viva whose questions and dossier spans refer to that text. Confirm a sub-250-word paste is stopped before graph or session creation.
-- Open `/triage` and confirm completed vivas are sorted by finding count without turning zero findings into a positive verdict.
+- Open `/triage` and confirm completed vivas are sorted by finding count, types appear inline, and a nonzero count jumps to the first finding without turning zero findings into a positive verdict.
+- If the organizer supplied a judge access code, enter it in the optional field and confirm a session can start after the ordinary five-session connection allowance is exhausted.
 
 ## Production deployment on Vercel
 
-1. Create a Supabase project and apply all four migrations in order.
+1. Create a Supabase project and apply all five migrations in order.
 2. Import or link the repository in Vercel.
-3. Add the four variables above to Production; add them to Preview and Development if those deployments should be functional. Mark the OpenAI and service-role values sensitive.
+3. Add the variables above to Production; add them to Preview and Development if those deployments should be functional. Mark the OpenAI key, service-role key, and judge access code sensitive.
 4. Set an OpenAI project spend cap appropriate for the public demo.
 5. Deploy, then verify:
 
@@ -221,6 +237,8 @@ All acceptance commands use only synthetic fixtures. The viva, stored-dossier, r
    ```
 
 The browser obtains a rate-authorized, short-lived client token from `/api/realtime/token`, then exchanges WebRTC SDP and audio directly with OpenAI. The standard OpenAI key never enters a client response or bundle. Session and token creation are atomically limited in Supabase to five attempts per salted IP digest per UTC day and a configurable global daily cap. Judge sessions are clamped to 150 seconds in Postgres and checked again before examiner turns.
+
+When `JUDGE_ACCESS_CODE` is configured, a judge may enter it on the landing page or supply it as the `judge_code` query parameter. A matching code bypasses the per-IP tier but remains atomically constrained by the separate `JUDGE_DAILY_CAP`; the code itself is server-only and is never documented by value or embedded in client assets.
 
 [`vercel.json`](./vercel.json) registers a daily `/api/health` cron that performs a trivial Supabase read. Production acceptance should include a `200` health response, Chrome and Safari microphone permission on the HTTPS domain, one desktop and one physical phone, a complete voice viva, a complete typed viva, and confirmation that attempt six from one connection receives HTTP `429` with the next UTC retry time.
 

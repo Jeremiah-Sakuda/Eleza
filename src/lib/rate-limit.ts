@@ -2,10 +2,11 @@ import { createHash } from "node:crypto";
 import { z } from "zod";
 import { claimGraphSchema, type ClaimGraph } from "@/lib/claim-graph";
 import { serviceClient } from "@/lib/decision-log";
+import { judgeDailyCap } from "@/lib/judge-access";
 
 const creationResultSchema = z.object({
   allowed: z.boolean(),
-  reason: z.enum(["allowed", "ip_daily_cap", "global_daily_cap"]),
+  reason: z.enum(["allowed", "ip_daily_cap", "global_daily_cap", "judge_daily_cap"]),
   viva_session_id: z.string().uuid().nullable(),
   ip_count: z.number().int().nonnegative(),
   global_count: z.number().int().nonnegative(),
@@ -14,7 +15,7 @@ const creationResultSchema = z.object({
 
 const tokenResultSchema = z.object({
   allowed: z.boolean(),
-  reason: z.enum(["allowed", "ip_daily_cap", "global_daily_cap", "session_not_available", "session_expired"]),
+  reason: z.enum(["allowed", "ip_daily_cap", "global_daily_cap", "judge_daily_cap", "session_not_available", "session_expired"]),
   ip_token_count: z.number().int().nonnegative(),
   global_token_count: z.number().int().nonnegative(),
 });
@@ -54,6 +55,7 @@ export async function createPublicVivaSession(args: {
   submissionId?: string;
   durationMs?: number;
   sessionKind?: "judge" | "practice";
+  judgeAccess?: boolean;
 }): Promise<PublicSessionResult> {
   const result = await serviceClient().rpc("create_public_viva_session", {
     p_ip_hash: hashClientIp(args.request),
@@ -64,6 +66,8 @@ export async function createPublicVivaSession(args: {
     p_duration_limit_ms: Math.min(args.durationMs ?? 120_000, 150_000),
     p_session_kind: args.sessionKind ?? "judge",
     p_global_limit: globalDailyCap(),
+    p_rate_limit_tier: args.judgeAccess ? "judge_code" : "public",
+    p_judge_limit: judgeDailyCap(),
   });
   if (result.error) throw new Error(`Could not create rate-limited viva: ${result.error.message}`);
   return creationResultSchema.parse(Array.isArray(result.data) ? result.data[0] : result.data);
@@ -74,6 +78,7 @@ export async function authorizeRealtimeToken(request: Request, sessionId: string
     p_session_id: z.string().uuid().parse(sessionId),
     p_ip_hash: hashClientIp(request),
     p_global_limit: globalDailyCap(),
+    p_judge_limit: judgeDailyCap(),
   });
   if (result.error) throw new Error(`Could not authorize Realtime token: ${result.error.message}`);
   return tokenResultSchema.parse(Array.isArray(result.data) ? result.data[0] : result.data);

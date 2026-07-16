@@ -82,3 +82,48 @@ test("examiner flags output after two rationale-gate retries", async () => {
   assert.equal(result.quality_gate.attempts, 3);
   assert.ok(result.quality_gate.failures.length >= 6);
 });
+
+test("rationale gate rejects a two-character transcript quote", async () => {
+  const fixture = await loadFixture("strong");
+  const decision = {
+    answer_summary: "The response explains the claim.",
+    target_claim_id: fixture.input.target_claim.id,
+    assessment: "strong" as const,
+    action: "advance" as const,
+    next_claim_id: "claim_thesis",
+    next_question: "How does the next claim support the thesis?",
+    rationale: `${fixture.input.target_claim.id} relies on "it" from the answer.`,
+  };
+  assert.ok(evaluateRationale(decision, fixture.input).some((failure) => failure.includes("five words or 25 contiguous characters")));
+});
+
+test("rationale gate accepts an exact 25-character contiguous quote", async () => {
+  const fixture = await loadFixture("strong");
+  const quote = fixture.input.transcript_segment.slice(0, 25);
+  assert.equal(quote.length, 25);
+  const decision = {
+    answer_summary: "The response explains the claim.",
+    target_claim_id: fixture.input.target_claim.id,
+    assessment: "strong" as const,
+    action: "advance" as const,
+    next_claim_id: "claim_thesis",
+    next_question: "How does the next claim support the thesis?",
+    rationale: `${fixture.input.target_claim.id} is grounded in "${quote}" from the answer.`,
+  };
+  assert.deepEqual(evaluateRationale(decision, fixture.input), []);
+});
+
+test("rationale gate rejects a paraphrase with transcript words in the wrong order", async () => {
+  const fixture = await loadFixture("strong");
+  const words = fixture.input.transcript_segment.split(/\s+/).slice(0, 6).reverse().join(" ");
+  const decision = {
+    answer_summary: "The response explains the claim.",
+    target_claim_id: fixture.input.target_claim.id,
+    assessment: "strong" as const,
+    action: "advance" as const,
+    next_claim_id: "claim_thesis",
+    next_question: "How does the next claim support the thesis?",
+    rationale: `${fixture.input.target_claim.id} is grounded in "${words}" from the answer.`,
+  };
+  assert.ok(evaluateRationale(decision, fixture.input).length > 0);
+});

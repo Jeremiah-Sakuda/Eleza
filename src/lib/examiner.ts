@@ -40,8 +40,12 @@ export function evaluateRationale(decision: ExaminerDecision, input: ExaminerInp
   }
   const quotedPhrases = [...decision.rationale.matchAll(/["“]([^"”]+)["”]/g)].map((match) => match[1].trim());
   const transcript = input.transcript_segment.toLocaleLowerCase();
-  const hasExactAnswerQuote = quotedPhrases.some((phrase) => phrase.length >= 2 && transcript.includes(phrase.toLocaleLowerCase()));
-  if (!hasExactAnswerQuote) failures.push("Rationale must quote an exact phrase from the transcript segment.");
+  const hasExactAnswerQuote = quotedPhrases.some((phrase) => {
+    const wordCount = phrase.split(/\s+/).filter(Boolean).length;
+    const isSubstantial = wordCount >= 5 || phrase.length >= 25;
+    return isSubstantial && transcript.includes(phrase.toLocaleLowerCase());
+  });
+  if (!hasExactAnswerQuote) failures.push("Rationale must quote an exact transcript phrase of at least five words or 25 contiguous characters.");
   return failures;
 }
 

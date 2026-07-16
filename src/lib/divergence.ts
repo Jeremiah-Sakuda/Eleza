@@ -5,7 +5,7 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { claimGraphSchema } from "@/lib/claim-graph";
 import { decisionLogEntrySchema } from "@/lib/decision-log";
-import { divergenceAnalysisSchema, type DivergenceAnalysis } from "@/lib/divergence-schema";
+import { divergenceAnalysisSchema, divergenceModelAnalysisSchema, type DivergenceAnalysis } from "@/lib/divergence-schema";
 import { MODELS } from "@/lib/models";
 
 export const transcriptTurnSchema = z.object({
@@ -39,7 +39,7 @@ export function validateDivergenceAnalysis(raw: unknown, rawInput: DivergenceInp
   const claims = new Map(input.graph.nodes.filter((node) => node.type === "claim").map((node) => [node.id, node]));
   const decisionsByReceipt = new Map(input.decision_log.map((entry) => [`${entry.target_claim_id}:${entry.answered_at_ms}`, entry]));
 
-  return divergenceAnalysisSchema.superRefine((analysis, context) => {
+  const validated = divergenceModelAnalysisSchema.superRefine((analysis, context) => {
     const seenFindings = new Set<string>();
     for (const [index, finding] of analysis.findings.entries()) {
       const claim = claims.get(finding.claim_id);
@@ -90,6 +90,7 @@ export function validateDivergenceAnalysis(raw: unknown, rawInput: DivergenceInp
       seenDefended.add(defended.claim_id);
     }
   }).parse(raw);
+  return divergenceAnalysisSchema.parse(validated);
 }
 
 export async function analyzeDivergence(
@@ -131,7 +132,7 @@ async function generateWithOpenAI({ model, prompt, input, feedback }: Parameters
         type: "json_schema",
         name: "divergence_analysis",
         strict: true,
-        schema: zodToJsonSchema(divergenceAnalysisSchema, { $refStrategy: "none" }),
+        schema: zodToJsonSchema(divergenceModelAnalysisSchema, { $refStrategy: "none" }),
       },
     },
   });

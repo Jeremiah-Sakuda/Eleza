@@ -478,3 +478,140 @@ Decisions and outcomes:
 - Staged and committed only the feature, documentation, and test files, leaving the user's active `docs/eleza-prd.md`, `.DS_Store`, and `UI_design/` changes untouched; pushed commit `f425e1e` to `main`.
 - Waited until Vercel served the new landing bundle, then verified production health `200`, paste-flow copy, signed student dossier receipts and appendices, malformed-token `404`, and deployed A4 print rules.
 - Ran the live database limiter acceptance—attempt six was refused for sessions and Realtime tokens—then completed a production Sol paste extraction in 120 seconds with 33 nodes, 42 edges, 22 claim nodes, and persisted spans.
+
+## 28 — Complete the final feature-freeze pass
+
+Prompt:
+
+```text
+Phase 7 — Final pass before feature freeze
+
+This is the last implementation prompt. Work in priority order and
+complete each item fully before the next, so a partial phase still
+ships whole. All five AGENTS.md invariants apply to every item — the
+meta-viva and follow-up questions especially must never drift into
+verdict language. After this phase the demo path is frozen: hotfixes
+only.
+
+1. Strengthen the rationale gate (claim/code gap — highest priority)
+   The current quote check accepts any transcript substring ≥2
+   characters, weaker than the README's "quotes the student's answer
+   exactly." Tighten it: the quoted excerpt must be ≥5 words OR ≥25
+   contiguous characters of the actual transcript segment. Apply to
+   first attempts and retries. Add tests: a 2-character quote MUST
+   fail, a 25-character contiguous quote passes, a paraphrase (right
+   words, wrong order) fails. Update the README wording to state the
+   enforced rule precisely.
+
+2. Judge access code (demo-lockout risk)
+   Add JUDGE_ACCESS_CODE (server env var). When supplied via query
+   param or a small field on the landing page, the session bypasses
+   the per-IP daily cap but counts against a separate
+   JUDGE_DAILY_CAP (env var, default 50). Never expose the code in
+   client bundles (extend verify:client-secrets to cover it). The
+   150-second clamp still applies. Document the mechanism in the
+   README deployment section without the value.
+
+3. The meta-viva: question this decision
+   Every rationale — in the live reasoning pane and in the dossier's
+   decision-log appendix — gets a quiet "Question this decision"
+   action. It opens a small exchange (text, 3 user turns max) where
+   the examiner defends THAT specific routing choice, grounded
+   strictly in: the decision-log entry, the target claim node, and
+   the transcript segment it judged. Use gpt-5.6-terra with a
+   versioned prompt in /prompts/meta-viva.md that requires citing the
+   claim ID and quoting the decision's own rationale; if it cannot
+   ground an answer in those records, it must say so plainly rather
+   than confabulate. Exchanges are ephemeral — not persisted, and
+   the decision log is never amended by them. Style: same green-mono
+   system voice; header line: "Eleza holds itself to the standard it
+   holds students to."
+
+4. The understanding map (live coverage rendering)
+   A miniature claim-graph rendering in the viva screen's corner,
+   fed entirely by existing decision-log state: untouched claims
+   ghosted graphite, the currently probed claim subtly pulsing,
+   claims the examiner assessed as adequately defended rendered
+   solid ink. No colors beyond the existing palette, no
+   checkmarks, no percentages — this is coverage, not scoring, and
+   the legend must say "examined / being examined / not yet
+   examined," never "passed." Include the final map state as a small
+   figure at the top of the dossier. Pure rendering: if any new
+   state storage seems required, stop and reconsider — the decision
+   log already contains everything needed.
+
+5. Follow-up prep for teachers
+   At dossier generation, for each finding produce 2–3 suggested
+   in-person questions the teacher could ask that student, generated
+   from the specific gap (gpt-5.6-sol, versioned prompt in
+   /prompts/follow-up.md, validated to reference the finding's claim
+   ID). Render as a quiet "For your conversation" block under each
+   finding, in the system's mono voice. These are prompts for the
+   HUMAN's conversation — the copy must never imply the student
+   failed or that the questions are remedial.
+
+6. Triage deep links + finding types inline
+   Each triage row: finding count links directly to the first
+   finding's anchor in the dossier (not the top), and the row shows
+   finding types inline in graphite mono (e.g. "2 mechanism_gap,
+   1 inconsistency"), amber only when nonzero as already established.
+
+7. Demo-clamp framing (copy)
+   One README line and one line on the viva start screen: real vivas
+   are teacher-configurable at 5–8 minutes; the hosted demo is
+   capped at ~2 minutes as a public-cost control. The clamp is a
+   deployment setting, not the assessment design.
+
+8. Tagline alignment (copy)
+   Replace "Students can fake the essay. Not the conversation."
+   everywhere it appears (landing hero, README, any meta tags) with:
+   "An essay can't tell you what a student understands. A
+   conversation can." Grep for the old line to catch every instance.
+
+9. The declined feature, documented
+   We considered and REJECTED storing audio recordings of vivas for
+   replay of findings (hearing the student's actual hesitation).
+   Rejected because retaining student voice recordings is
+   surveillance-weight infrastructure that contradicts the product's
+   privacy posture; transcripts with timestamps carry the evidentiary
+   value without the biometric residue. Record this as a
+   // DECISION: comment at the top of src/lib/dossier-store.ts, a
+   build-log entry, and one sentence in the README's invariants
+   section ("What Eleza deliberately does not do: ... retain audio
+   recordings"). Do not implement any audio storage.
+
+10. Hygiene
+    git mv "Live Viva Room.dc.html" and any other design reference
+    files into design/; resolve Agents.md vs AGENTS.md to a single
+    canonical AGENTS.md (preserve content, update every reference);
+    verify no README relative link 404s afterward.
+
+Acceptance:
+- Gate tests pass including the new failure cases; README matches the
+  enforced rule.
+- With the judge code, a 6th session from one IP succeeds; without
+  it, refused; the code appears nowhere in built client assets.
+- During a live viva: the understanding map fills as decisions land,
+  and clicking any rationale opens a grounded meta-viva exchange that
+  cites the claim ID; asking it something outside the records gets an
+  honest refusal, not invention.
+- A dossier shows the final map, per-finding "For your conversation"
+  blocks referencing correct claim IDs, and its decision-log entries
+  are questionable via the same meta-viva surface.
+- Triage counts deep-link to finding anchors and show inline types.
+- Old tagline: zero occurrences repo-wide. New tagline present on
+  landing and README.
+- npm test, lint, build, verify:client-secrets clean; deployed;
+  README's judge-testing section updated for the meta-viva, map, and
+  judge code (mechanism only).
+
+Append the build log entry per standing practice. After this deploys
+and I verify the checklist against production, the demo path is
+frozen.
+```
+
+Decisions and outcomes:
+
+- Enforced rationale receipts as exact transcript substrings of at least five words or 25 contiguous characters on every examiner attempt, with boundary and wrong-order tests proving short or paraphrased excerpts cannot pass.
+- Kept the judge bypass server-side and auditable: a constant-time checked access code selects a separate daily tier while the 150-second clamp remains unchanged; meta-viva exchanges remain ephemeral and all coverage UI derives only from the existing claim graph and append-only decision log.
+- Rejected audio retention and documented why: timestamped transcripts preserve the evidentiary receipt without retaining biometric voice data. Added Sol-generated, claim-bound teacher follow-ups to the existing dossier analysis record, then consolidated design references under `design/` and the build instructions under canonical `AGENTS.md`.

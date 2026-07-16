@@ -13,6 +13,8 @@ import {
   VIVA_DURATION_MS,
   type VivaQuestion,
 } from "@/lib/viva-pipeline";
+import { MetaVivaExchange } from "@/app/meta-viva-exchange";
+import { UnderstandingMap } from "@/app/understanding-map";
 
 type SessionStatus = "loading" | "idle" | "connecting" | "live" | "ending" | "complete" | "error";
 type SessionPhase = "listening" | "speaking" | "thinking";
@@ -25,6 +27,7 @@ type Handoff = {
   deliveryMode?: "voice" | "text";
   practice?: boolean;
   sourceKind?: "paste";
+  judgeAccessCode?: string;
 };
 type LiveTurn = TranscriptTurn & { targetClaimId?: string; questionKind?: VivaQuestion["kind"] };
 
@@ -375,6 +378,7 @@ export default function VivaPage() {
           title: handoff.title,
           durationMs: handoff.durationMs,
           sessionKind: handoff.practice ? "practice" : "judge",
+          judgeAccessCode: handoff.judgeAccessCode,
         }),
       });
       const session = await sessionResponse.json() as { id?: string; durationLimitMs?: number; error?: string };
@@ -511,7 +515,7 @@ export default function VivaPage() {
     <main className="viva-main viva-reasoning-layout">
       <section className="transcript-column">
         <p className="column-label">TRANSCRIPT</p>
-        {turns.length === 0 && <div className="viva-ready-copy"><h1>{handoff.practice ? "Warm up first." : "Defend the argument."}</h1><p>The AI examiner asks only questions tied to this essay’s parsed claims. {isTextMode ? "Type each answer and send it when complete." : "Answer out loud, then press Finish answer when you are done."} The session lasts {durationLabel}.</p>{handoff.sourceKind === "paste" && <p className="viva-data-note">Your text and transcript are stored to generate your dossier.</p>}<p className="viva-start-disclosure">AI INTERACTION · {handoff.practice ? "UNRECORDED PRACTICE" : "TRANSCRIPT AND ROUTING RECEIPTS RECORDED"}</p><button onClick={startLiveSession} disabled={status === "connecting"}>{status === "connecting" ? "Connecting…" : `Start ${handoff.practice ? "warm-up" : "viva"} — ${durationLabel}`}</button></div>}
+        {turns.length === 0 && <div className="viva-ready-copy"><h1>{handoff.practice ? "Warm up first." : "Defend the argument."}</h1><p>The AI examiner asks only questions tied to this essay’s parsed claims. {isTextMode ? "Type each answer and send it when complete." : "Answer out loud, then press Finish answer when you are done."} The session lasts {durationLabel}.</p>{!handoff.practice && <p className="viva-clamp-note">Real vivas are teacher-configurable at 5–8 minutes. This hosted demo is capped at about two minutes as a public-cost control.</p>}{handoff.sourceKind === "paste" && <p className="viva-data-note">Your text and transcript are stored to generate your dossier.</p>}<p className="viva-start-disclosure">AI INTERACTION · {handoff.practice ? "UNRECORDED PRACTICE" : "TRANSCRIPT AND ROUTING RECEIPTS RECORDED"}</p><button onClick={startLiveSession} disabled={status === "connecting"}>{status === "connecting" ? "Connecting…" : `Start ${handoff.practice ? "warm-up" : "viva"} — ${durationLabel}`}</button></div>}
         {turns.map((turn) => <article className={`transcript-turn ${turn.speaker}`} key={turn.id}>
           <time>{formatElapsed(turn.elapsedMs)}</time><div><small>{turn.speaker.toUpperCase()}{turn.targetClaimId ? ` · ${turn.targetClaimId}${turn.questionKind === "bridge" ? " · BRIDGE" : ""}` : ""}</small><p>{turn.text}</p></div>
         </article>)}
@@ -526,11 +530,13 @@ export default function VivaPage() {
 
       <aside className="reasoning-pane">
         <p className="column-label">EXAMINER — LIVE REASONING</p>
+        <UnderstandingMap graph={handoff.graph} decisionLog={decisionLog} compact />
         {decisionLog.length === 0 && pendingDecisions === 0 && <p className="reasoning-empty">Specific routing receipts will appear after each completed answer.</p>}
         {decisionLog.map((entry) => <article className="reasoning-entry" key={entry.id}>
           <time>{formatElapsed(entry.answered_at_ms)}</time>
           <div className="reasoning-route"><span>{entry.target_claim_id}</span><b>{entry.action}</b><span>→ {entry.next_claim_id}</span></div>
           <p>{entry.rationale}</p>
+          {handoff.graph.nodes.find((node) => node.id === entry.target_claim_id && node.type === "claim") && <MetaVivaExchange decision={entry} targetClaim={handoff.graph.nodes.find((node) => node.id === entry.target_claim_id && node.type === "claim")!} />}
         </article>)}
         {pendingDecisions > 0 && <div className="reasoning-pending"><span>deciding</span><b>···</b><small>{pendingDecisions} answer{pendingDecisions === 1 ? "" : "s"} processing</small></div>}
       </aside>

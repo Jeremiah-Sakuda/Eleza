@@ -16,7 +16,10 @@ export default function TriageTable({ initialRows }: { initialRows: TriageRow[] 
         <span className="triage-student">{row.studentLabel}</span>
         <span className="triage-title">{row.title}</span>
         <span className="triage-duration">{formatElapsed(row.durationMs)}</span>
-        <span className={row.findingCount > 0 ? "triage-findings has-findings" : "triage-findings"}>{row.findingCount > 0 ? `${row.findingCount} finding${row.findingCount === 1 ? "" : "s"}` : "—"}</span>
+        <div className="triage-finding-cell">{row.findingCount > 0
+          ? <><a className="triage-findings has-findings" href={`/dossier/${row.dossierId}#finding-0`}>{row.findingCount} finding{row.findingCount === 1 ? "" : "s"}</a><span className="triage-finding-types">{row.findingTypeSummary}</span></>
+          : <span className="triage-findings">—</span>}
+        </div>
         <a href={`/dossier/${row.dossierId}`}>Read dossier</a>
       </div>)}
     </div>

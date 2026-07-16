@@ -2,6 +2,8 @@ import { formatElapsed } from "@/lib/scripted-viva";
 import type { Dossier } from "@/lib/dossier-store";
 import { PrintDossierButton } from "@/app/dossier/print-dossier-button";
 import { StudentDossierLink } from "@/app/dossier/student-dossier-link";
+import { MetaVivaExchange } from "@/app/meta-viva-exchange";
+import { UnderstandingMap } from "@/app/understanding-map";
 
 export function DossierView({ dossier, studentPath }: { dossier: Dossier; studentPath?: string }) {
   const claimNodes = new Map(dossier.graph.nodes.filter((node) => node.type === "claim").map((node) => [node.id, node]));
@@ -20,6 +22,8 @@ export function DossierView({ dossier, studentPath }: { dossier: Dossier; studen
       <div className="dossier-rule" />
       <em>This dossier presents evidence. Conclusions belong to the teacher.</em>
     </header>
+
+    <UnderstandingMap graph={dossier.graph} decisionLog={dossier.decisionLog} />
 
     <DossierSection title="CLAIMS DEFENDED">
       {dossier.analysis.claims_defended.length === 0 && <p className="dossier-empty">No claim met the defended-claim receipt rule.</p>}
@@ -43,7 +47,7 @@ export function DossierView({ dossier, studentPath }: { dossier: Dossier; studen
         const claim = claimNodes.get(finding.claim_id);
         const sequence = transcriptSequence.get(`${finding.claim_id}:${finding.timestamp}`);
         const letter = String.fromCharCode(65 + index);
-        return <article className="dossier-finding" key={`${finding.claim_id}-${finding.type}-${finding.timestamp}`}>
+        return <article className="dossier-finding" id={`finding-${index}`} key={`${finding.claim_id}-${finding.type}-${finding.timestamp}`}>
           <div className="finding-label">FINDING {letter} — {finding.type.replaceAll("_", " ")}</div>
           <div className="finding-receipt-grid">
             <div id={`finding-${index}-transcript`}>
@@ -64,6 +68,10 @@ export function DossierView({ dossier, studentPath }: { dossier: Dossier; studen
             </div>
           </div>
           <p className="finding-note">{finding.note}</p>
+          {finding.follow_up_questions.length > 0 && <div className="finding-follow-ups">
+            <strong>FOR YOUR CONVERSATION</strong>
+            <ul>{finding.follow_up_questions.map((question) => <li key={question}>{question}</li>)}</ul>
+          </div>}
         </article>;
       })}
     </DossierSection>
@@ -83,7 +91,7 @@ export function DossierView({ dossier, studentPath }: { dossier: Dossier; studen
         <div className="dossier-record decision-record">
           {dossier.decisionLog.map((entry) => <div className="record-row" key={entry.id}>
             <time>{formatElapsed(entry.answered_at_ms)}</time>
-            <span><b>{entry.target_claim_id} · {entry.assessment} · {entry.action} → {entry.next_claim_id}</b><br />{entry.rationale}</span>
+            <span><b>{entry.target_claim_id} · {entry.assessment} · {entry.action} → {entry.next_claim_id}</b><br />{entry.rationale}{claimNodes.get(entry.target_claim_id) && <MetaVivaExchange decision={entry} targetClaim={claimNodes.get(entry.target_claim_id)!} />}</span>
           </div>)}
         </div>
       </details>

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Instrument+Sans:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; padding: 0; background: #FAFAF8; }
+  a { color: #1E6B4E; text-decoration-color: rgba(30,107,78,0.4); }
+  a:hover { color: #16181D; }
+  @keyframes noteIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+  @keyframes drawLine { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+  @media (prefers-reduced-motion: reduce) { * { animation-duration: 0.01ms !important; } }
+</style>
+</helmet>
+<div style="min-height:100vh; background:#FAFAF8; color:#16181D; font-family:'Instrument Sans',sans-serif;">
+  <div style="max-width:1080px; margin:0 auto; padding:26px 40px 0; display:flex; align-items:baseline; justify-content:space-between;">
+    <div style="font-size:12px; letter-spacing:0.24em;">ELEZA</div>
+    <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#8A8F98;">NO LOGIN &middot; 2-MINUTE DEMO</div>
+  </div>
+
+  <div style="max-width:1080px; margin:0 auto; padding:72px 40px 0;">
+    <div style="font-family:'Spectral',serif; font-size:42px; font-weight:500; line-height:1.2; max-width:640px; text-wrap:pretty;">An essay can't tell you what a student understands. A conversation can.</div>
+    <div style="font-size:15px; color:#8A8F98; margin-top:16px; max-width:560px; line-height:1.6;">Eleza reads a submission, then holds a short spoken viva about it &mdash; and shows every reason for every question, live, in the margin.</div>
+  </div>
+
+  <div ref="{{ heroRef }}" style="position:relative; max-width:1080px; margin:0 auto; padding:56px 40px 0; display:grid; grid-template-columns:minmax(0,1fr) 284px; gap:64px; align-items:start;">
+    <svg style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible;">
+      <sc-for list="{{ lines }}" as="ln" hint-placeholder-count="0">
+        <path d="{{ ln.d }}" pathLength="1" style="fill:none; stroke:#1E6B4E; stroke-opacity:0.45; stroke-width:1; stroke-dasharray:1; animation:drawLine 0.8s ease both;"></path>
+      </sc-for>
+    </svg>
+
+    <div style="border-top:1px solid rgba(138,143,152,0.4); padding-top:26px;">
+      <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#8A8F98;">FROM A SUBMITTED ESSAY &mdash; MID-VIVA</div>
+      <div style="font-family:'Spectral',serif; font-size:17.5px; line-height:1.8; margin-top:22px; max-width:600px; text-wrap:pretty;">
+        <p style="margin:0 0 20px;">English spelling did not settle because anyone decided that it should. <span ref="{{ a1 }}" style="border-bottom:1px solid rgba(30,107,78,0.55);">It settled because print shops made variation expensive</span>: compositors were paid by the page, resetting type cost money, and a house style was cheaper than a standing argument at the composing stone.</p>
+        <p style="margin:0;">The prestige account predicts official documents leading the change; instead, private correspondence shows the printed forms <span ref="{{ a2 }}" style="border-bottom:1px solid rgba(30,107,78,0.55);">within a generation of Caxton&rsquo;s press (Fisher, ch. 2)</span> &mdash; <span ref="{{ a3 }}" style="border-bottom:1px solid rgba(30,107,78,0.55);">proof that the machine, not the court, carried the standard</span>.</p>
+      </div>
+    </div>
+
+    <div style="position:relative; min-height:360px; border-top:1px solid rgba(138,143,152,0.4); padding-top:26px;">
+      <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#8A8F98;">EXAMINER &mdash; LIVE</div>
+      <sc-for list="{{ notes }}" as="n" hint-placeholder-count="3">
+        <div ref="{{ n.ref }}" style="position:absolute; top:{{ n.top }}px; left:0; right:0; animation:noteIn 0.5s ease both;">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:10px; color:#8A8F98; margin-bottom:5px;">{{ n.time }}</div>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:12px; line-height:1.65; color:#1E6B4E; text-wrap:pretty;">{{ n.text }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="max-width:1080px; margin:0 auto; padding:48px 40px 0; display:flex; align-items:center; gap:28px; flex-wrap:wrap;">
+    <button style="font-family:'Instrument Sans',sans-serif; font-size:15px; color:#FAFAF8; background:#16181D; border:none; border-radius:2px; padding:13px 26px; cursor:pointer;" style-hover="background:#1E6B4E;">Defend this essay yourself &mdash; 2 minutes</button>
+    <a href="#" style="font-size:14px;">Watch a finished dossier instead</a>
+  </div>
+
+  <div style="max-width:1080px; margin:88px auto 0; padding:0 40px;">
+    <div style="display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:44px;">
+      <div style="border-top:1px solid rgba(138,143,152,0.4); padding-top:18px;">
+        <div style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#8A8F98;">01</div>
+        <div style="font-family:'Spectral',serif; font-size:19px; margin-top:10px;">Read the essay</div>
+        <div style="font-size:13.5px; color:#8A8F98; line-height:1.6; margin-top:8px;">A short synthetic essay, already parsed into its claims.</div>
+      </div>
+      <div style="border-top:1px solid rgba(138,143,152,0.4); padding-top:18px;">
+        <div style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#8A8F98;">02</div>
+        <div style="font-family:'Spectral',serif; font-size:19px; margin-top:10px;">Talk it through</div>
+        <div style="font-size:13.5px; color:#8A8F98; line-height:1.6; margin-top:8px;">The examiner asks; you answer out loud. Its reasoning stays visible.</div>
+      </div>
+      <div style="border-top:1px solid rgba(138,143,152,0.4); padding-top:18px;">
+        <div style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#8A8F98;">03</div>
+        <div style="font-family:'Spectral',serif; font-size:19px; margin-top:10px;">Get your dossier</div>
+        <div style="font-size:13.5px; color:#8A8F98; line-height:1.6; margin-top:8px;">Evidence of what you defended and where you diverged. No score.</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="max-width:1080px; margin:96px auto 0; padding:0 40px 56px;">
+    <div style="height:1px; background:rgba(138,143,152,0.4);"></div>
+    <div style="display:flex; align-items:baseline; justify-content:space-between; gap:24px; padding-top:20px; flex-wrap:wrap;">
+      <div style="font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.14em; color:#8A8F98;">NO DETECTION. NO SCORES. EVIDENCE ONLY.</div>
+      <div style="font-size:12px; color:#8A8F98;">Eleza &mdash; oral defense for student writing</div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { tops: null, lines: [] };
+  constructor(props) {
+    super(props);
+    this.heroRef = React.createRef();
+    this._refs = {};
+    this.notesData = [
+      { id: 'a', anchor: 'a1', time: '00:41', text: 'CLAIM 01 parsed: compositor economics. Will ask for the mechanism, not the phrasing.' },
+      { id: 'b', anchor: 'a2', time: '01:12', text: 'This citation is doing heavy lifting. Verifying Fisher ch. 2 supports a letters corpus. It may not.' },
+      { id: 'c', anchor: 'a3', time: '01:26', text: 'Extends the thesis past the evidence shown. Probing here first.' }
+    ];
+  }
+  getRef(k) { if (!this._refs[k]) this._refs[k] = React.createRef(); return this._refs[k]; }
+  measure = () => {
+    const main = this.heroRef.current;
+    if (!main) return;
+    const mR = main.getBoundingClientRect();
+    const marginCol = main.lastElementChild;
+    const colR = marginCol.getBoundingClientRect();
+    const colTop = colR.top - mR.top;
+    const tops = {}, lines = [];
+    let cursor = 48;
+    for (const n of this.notesData) {
+      const a = this._refs[n.anchor] && this._refs[n.anchor].current;
+      const el = this._refs['note-' + n.id] && this._refs['note-' + n.id].current;
+      if (!a || !el) continue;
+      const rects = a.getClientRects();
+      const aR = rects.length ? rects[rects.length - 1] : a.getBoundingClientRect();
+      const anchorX = aR.right - mR.left + 6;
+      const anchorY = aR.top - mR.top + aR.height / 2;
+      let top = anchorY - colTop - 8;
+      if (top < cursor) top = cursor;
+      tops[n.id] = top;
+      cursor = top + el.offsetHeight + 24;
+      const noteX = colR.left - mR.left - 14;
+      const noteY = colTop + top + 8;
+      lines.push({ d: 'M ' + anchorX + ' ' + anchorY + ' L ' + (anchorX + 24) + ' ' + anchorY + ' L ' + noteX + ' ' + noteY });
+    }
+    const prev = JSON.stringify([this.state.tops, this.state.lines]);
+    const next = JSON.stringify([tops, lines]);
+    if (prev !== next) this.setState({ tops, lines });
+  };
+  componentDidMount() {
+    this.measure();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.measure());
+    this._onResize = () => this.measure();
+    window.addEventListener('resize', this._onResize);
+  }
+  componentWillUnmount() { window.removeEventListener('resize', this._onResize); }
+  renderVals() {
+    return {
+      heroRef: this.heroRef,
+      a1: this.getRef('a1'), a2: this.getRef('a2'), a3: this.getRef('a3'),
+      notes: this.notesData.map((n, i) => ({
+        ...n,
+        ref: this.getRef('note-' + n.id),
+        top: (this.state.tops && this.state.tops[n.id] != null) ? this.state.tops[n.id] : 48 + i * 110
+      })),
+      lines: this.state.lines
+    };
+  }
+}
+</script>
+</body>
+</html>

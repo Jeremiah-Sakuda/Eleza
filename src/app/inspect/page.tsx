@@ -8,7 +8,7 @@ type Result = {
   graph: ClaimGraph;
   persistence: { persisted: boolean; submissionId?: string; graphId?: string };
 };
-type InspectionHandoff = { title: string; sourceKind: "paste"; durationMs: number; result: Result };
+type InspectionHandoff = { title: string; sourceKind: "paste"; durationMs: number; judgeAccessCode?: string; result: Result };
 
 const colors = { claim: "#3455db", evidence: "#16836d", citation: "#9b5f18" };
 
@@ -63,6 +63,7 @@ export default function InspectionPage() {
       deliveryMode,
       practice: false,
       sourceKind: handoff?.sourceKind,
+      judgeAccessCode: handoff?.judgeAccessCode,
     }));
     window.location.assign("/viva");
   }

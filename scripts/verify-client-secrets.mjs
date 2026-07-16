@@ -10,8 +10,9 @@ async function filesUnder(directory) {
 }
 
 async function main() {
-  const secrets = [process.env.OPENAI_API_KEY, process.env.SUPABASE_SERVICE_ROLE_KEY].filter((value) => value && value.length >= 16);
-  if (secrets.length !== 2) throw new Error("OPENAI_API_KEY and SUPABASE_SERVICE_ROLE_KEY are required for the bundle scan.");
+  const requiredSecrets = [process.env.OPENAI_API_KEY, process.env.SUPABASE_SERVICE_ROLE_KEY].filter((value) => value && value.length >= 16);
+  if (requiredSecrets.length !== 2) throw new Error("OPENAI_API_KEY and SUPABASE_SERVICE_ROLE_KEY are required for the bundle scan.");
+  const secrets = [...requiredSecrets, process.env.JUDGE_ACCESS_CODE].filter((value) => Boolean(value));
   const staticRoot = path.join(process.cwd(), ".next", "static");
   const files = await filesUnder(staticRoot);
   for (const file of files) {
@@ -20,7 +21,7 @@ async function main() {
       throw new Error(`A server secret was found in client bundle ${path.relative(process.cwd(), file)}.`);
     }
   }
-  console.log(`Client bundle scan passed across ${files.length} static assets; no server secret values were present.`);
+  console.log(`Client bundle scan passed across ${files.length} static assets; no configured server secret values were present.`);
 }
 
 void main().catch((error) => {

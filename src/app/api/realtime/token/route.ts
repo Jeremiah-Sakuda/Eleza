@@ -22,7 +22,9 @@ export async function POST(request: Request) {
       return NextResponse.json({
         error: authorization.reason === "ip_daily_cap"
           ? `Daily voice-token limit reached for this connection. Try again after ${retryAt}.`
-          : `Daily voice-token capacity reached. Try again after ${retryAt}.`,
+          : authorization.reason === "judge_daily_cap"
+            ? `Daily judge-access voice capacity reached. Try again after ${retryAt}.`
+            : `Daily voice-token capacity reached. Try again after ${retryAt}.`,
         code: authorization.reason,
         retryAt,
       }, { status: 429, headers: { "Retry-After": "86400" } });

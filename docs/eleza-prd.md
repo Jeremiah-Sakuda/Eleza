@@ -7,7 +7,7 @@
 
 ## 1. One-liner
 
-Students can fake the essay but not the conversation. Eleza conducts a live voice oral defense of any submitted work — with a transparent examiner that shows its reasoning in real time — and produces an evidence dossier instead of a verdict.
+An essay can't tell you what a student understands. A conversation can. Eleza conducts a live voice oral defense of submitted work — with a transparent examiner that shows its reasoning in real time — and produces an evidence dossier instead of a verdict.
 
 ## 2. Problem
 

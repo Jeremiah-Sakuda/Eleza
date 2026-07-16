@@ -8,6 +8,8 @@ import { authorizeRealtimeToken } from "@/lib/rate-limit";
 
 async function main() {
   process.env.DEMO_GLOBAL_DAILY_CAP = "100000";
+  process.env.JUDGE_ACCESS_CODE = `acceptance-${Date.now()}`;
+  process.env.JUDGE_DAILY_CAP = "50";
   const sourceText = await readFile(path.join(process.cwd(), "fixtures", "community-gardens-argument.txt"), "utf8");
   const graph = judgeDemoGraph(sourceText);
   const ip = `2001:db8::${Date.now().toString(16)}`;
@@ -33,18 +35,38 @@ async function main() {
     }
   }
 
+  const judgeRequest = new Request("https://eleza.example/api/viva/sessions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-vercel-forwarded-for": ip },
+    body: JSON.stringify({
+      graph,
+      sourceText,
+      title: "Judge-access acceptance fixture",
+      durationMs: 999_999,
+      judgeAccessCode: process.env.JUDGE_ACCESS_CODE,
+    }),
+  });
+  const judgeResponse = await POST(judgeRequest);
+  const judgeBody = await judgeResponse.json() as { id?: string; durationLimitMs?: number; error?: string };
+  assert.equal(judgeResponse.status, 200, judgeBody.error);
+  assert.ok(judgeBody.id, "A valid judge code did not bypass the exhausted per-IP tier.");
+  assert.equal(judgeBody.durationLimitMs, 150_000, "Judge access bypassed the duration ceiling.");
+  sessionIds.push(judgeBody.id);
+
   const tokenRequest = new Request("https://eleza.example/api/realtime/token", { headers: { "x-vercel-forwarded-for": ip } });
-  for (const sessionId of sessionIds) {
+  for (const sessionId of sessionIds.slice(0, 5)) {
     const authorization = await authorizeRealtimeToken(tokenRequest, sessionId);
     assert.equal(authorization.allowed, true, `Token for ${sessionId} was refused before the cap.`);
   }
   const sixthToken = await authorizeRealtimeToken(tokenRequest, sessionIds[0]);
   assert.equal(sixthToken.allowed, false, "The sixth Realtime token was not blocked.");
   assert.equal(sixthToken.reason, "ip_daily_cap");
+  const judgeToken = await authorizeRealtimeToken(tokenRequest, judgeBody.id);
+  assert.equal(judgeToken.allowed, true, "Judge access did not bypass the exhausted public token tier.");
 
   const cleanup = await serviceClient().from("viva_sessions").update({ status: "abandoned" }).in("id", sessionIds);
   if (cleanup.error) throw new Error(`Could not close acceptance sessions: ${cleanup.error.message}`);
-  console.log(`Rate-limit acceptance passed: session and token attempts six were blocked for ${ip}; the configured hard ceiling was applied.`);
+  console.log(`Rate-limit acceptance passed: public attempt six was blocked for ${ip}, while a valid judge code created a clamped session and token through the separate tier.`);
 }
 
 void main().catch((error) => {
