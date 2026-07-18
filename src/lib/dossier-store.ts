@@ -101,8 +101,8 @@ export async function generateAndPersistDossier(sessionId: string) {
     questionKind: turn.question_kind ?? undefined,
   }));
   const decisionLog = z.array(decisionLogEntrySchema).parse(logResult.data);
-  const result = await analyzeDivergence({ source_text: sourceText, graph, transcript, decision_log: decisionLog });
-  const followUps = await generateFindingFollowUps(result.analysis.findings, graph);
+  const result = await analyzeDivergence({ source_text: sourceText, graph, transcript, decision_log: decisionLog, profile_id: profileId });
+  const followUps = await generateFindingFollowUps(result.analysis.findings, graph, { profileId });
   const analysis = divergenceAnalysisSchema.parse({
     ...result.analysis,
     findings: attachFindingFollowUps(result.analysis.findings, followUps),

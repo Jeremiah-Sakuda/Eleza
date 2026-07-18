@@ -1,6 +1,7 @@
 import { z } from "zod";
-import { claimGraphSchema, type ClaimGraph } from "@/lib/claim-graph";
+import { claimGraphSchema, isPrimaryNode, type ClaimGraph } from "@/lib/claim-graph";
 import { examinerDecisionSchema, type ExaminerDecision } from "@/lib/examiner-schema";
+import { type ProfileId } from "@/lib/domain-profile";
 
 export const VIVA_DURATION_MS = 300_000;
 export const DEAD_AIR_LIMIT_MS = 2_000;
@@ -28,44 +29,50 @@ function assertQuestionText(text: string) {
   }
 }
 
-function claims(graph: ClaimGraph) {
-  return graph.nodes.filter((node) => node.type === "claim");
+function claims(graph: ClaimGraph, profileId: ProfileId = "essay") {
+  return graph.nodes.filter((node) => isPrimaryNode(node, profileId));
 }
 
-export function assertQuestionTrace(question: VivaQuestion, graph: ClaimGraph) {
+export function assertQuestionTrace(question: VivaQuestion, graph: ClaimGraph, profileId: ProfileId = "essay") {
   vivaQuestionSchema.parse(question);
   assertQuestionText(question.text);
-  if (!claims(graph).some((node) => node.id === question.targetClaimId)) {
-    throw new Error(`Question ${question.id} does not trace to a claim node.`);
+  if (!claims(graph, profileId).some((node) => node.id === question.targetClaimId)) {
+    throw new Error(`Question ${question.id} does not trace to an examinable graph node.`);
   }
   return question;
 }
 
-export function openingQuestion(graph: ClaimGraph): VivaQuestion {
+export function openingQuestion(graph: ClaimGraph, profileId: ProfileId = "essay"): VivaQuestion {
   const parsed = claimGraphSchema.parse(graph);
-  const target = claims(parsed)[0];
-  if (!target) throw new Error("A viva requires at least one claim node.");
+  const target = claims(parsed, profileId)[0];
+  if (!target) throw new Error("A viva requires at least one examinable graph node.");
+  const text = profileId === "code"
+    ? `Begin with this design decision: “${target.label}” Why did you choose this structure, and what input would make it break?`
+    : `Begin with this claim: “${target.label}” Explain the mechanism in your own words.`;
   return assertQuestionTrace({
     id: "opening-0",
     kind: "opening",
     targetClaimId: target.id,
-    text: `Begin with this claim: “${target.label}” Explain the mechanism in your own words.`,
-  }, parsed);
+    text,
+  }, parsed, profileId);
 }
 
-export function prefetchBridgeQuestions(graph: ClaimGraph, count = PREFETCHED_BRIDGE_COUNT): VivaQuestion[] {
+export function prefetchBridgeQuestions(graph: ClaimGraph, count = PREFETCHED_BRIDGE_COUNT, profileId: ProfileId = "essay"): VivaQuestion[] {
   const parsed = claimGraphSchema.parse(graph);
-  const claimNodes = claims(parsed);
-  if (!claimNodes.length) throw new Error("A viva requires at least one claim node.");
+  const claimNodes = claims(parsed, profileId);
+  if (!claimNodes.length) throw new Error("A viva requires at least one examinable graph node.");
   // DECISION: bridges are deterministic and precomputed, so examiner latency can never grant the voice model routing authority.
   return Array.from({ length: count }, (_, index) => {
     const target = claimNodes[(index + 1) % claimNodes.length];
+    const text = profileId === "code"
+      ? `While I consider that answer, turn to this decision: “${target.label}” What alternative did you reject, and what would break if this choice changed?`
+      : `While I consider that answer, turn to this claim: “${target.label}” What role does it play in the argument?`;
     return assertQuestionTrace({
       id: `bridge-${index}`,
       kind: "bridge",
       targetClaimId: target.id,
-      text: `While I consider that answer, turn to this claim: “${target.label}” What role does it play in the argument?`,
-    }, parsed);
+      text,
+    }, parsed, profileId);
   });
 }
 
@@ -74,12 +81,12 @@ export class VivaQuestionPipeline {
   private bridgeIndex = 0;
   private readonly adaptive: VivaQuestion[] = [];
 
-  constructor(private readonly graph: ClaimGraph) {
+  constructor(private readonly graph: ClaimGraph, private readonly profileId: ProfileId = "essay") {
     this.graph = claimGraphSchema.parse(graph);
-    this.bridges = prefetchBridgeQuestions(this.graph);
+    this.bridges = prefetchBridgeQuestions(this.graph, PREFETCHED_BRIDGE_COUNT, this.profileId);
   }
 
-  opening() { return openingQuestion(this.graph); }
+  opening() { return openingQuestion(this.graph, this.profileId); }
 
   acceptDecision(decision: ExaminerDecision, sequence: number) {
     const parsed = examinerDecisionSchema.parse(decision);
@@ -89,7 +96,7 @@ export class VivaQuestionPipeline {
       targetClaimId: parsed.next_claim_id,
       text: parsed.next_question,
       sourceDecisionSequence: sequence,
-    }, this.graph));
+    }, this.graph, this.profileId));
   }
 
   nextImmediate(): VivaQuestion {

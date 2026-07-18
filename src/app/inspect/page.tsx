@@ -11,7 +11,10 @@ type Result = {
 };
 type InspectionHandoff = { title: string; sourceKind: "paste"; durationMs: number; profileId: ProfileId; judgeAccessCode?: string; result: Result };
 
-const colors = { claim: "#3455db", evidence: "#16836d", citation: "#9b5f18" };
+const colors = {
+  claim: "#3455db", evidence: "#16836d", citation: "#9b5f18",
+  design_decision: "#1e6b4e", implementation: "#4f5966", assumption: "#9b5f18",
+} as const;
 
 export default function InspectionPage() {
   const fileInput = useRef<HTMLInputElement>(null);

@@ -3,11 +3,11 @@ import { z } from "zod";
 import { appendDecisionLog, assertVivaWithinDuration } from "@/lib/decision-log";
 import { examineAnswer, examinerInputSchema } from "@/lib/examiner";
 
-const inputSchema = examinerInputSchema.extend({
+const inputSchema = z.intersection(examinerInputSchema, z.object({
   session_id: z.string().uuid(),
   sequence: z.number().int().nonnegative(),
   answered_at_ms: z.number().int().nonnegative(),
-});
+}));
 
 export async function POST(request: Request) {
   try {

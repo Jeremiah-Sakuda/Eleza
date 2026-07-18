@@ -6,7 +6,7 @@ import { countWords, PASTE_MAX_WORDS, PASTE_MIN_WORDS } from "@/lib/paste-submis
 
 type DemoFixture = { title: string; sourceText: string; graph: ClaimGraph };
 
-export default function DemoLanding({ judge, practice }: { judge: DemoFixture; practice: DemoFixture }) {
+export default function DemoLanding({ judge, practice, code }: { judge: DemoFixture; practice: DemoFixture; code: DemoFixture }) {
   const [pastedText, setPastedText] = useState("");
   const [pasteError, setPasteError] = useState("");
   const [mappingPaste, setMappingPaste] = useState(false);
@@ -18,13 +18,13 @@ export default function DemoLanding({ judge, practice }: { judge: DemoFixture; p
     setJudgeAccessCode(query.get("judge_code") ?? query.get("judge") ?? "");
   }, []);
 
-  function start(fixture: DemoFixture, options: { practice: boolean; deliveryMode: "voice" | "text" }) {
+  function start(fixture: DemoFixture, options: { practice: boolean; deliveryMode: "voice" | "text"; profileId?: "essay" | "code" }) {
     sessionStorage.setItem("eleza:viva-handoff", JSON.stringify({
       ...fixture,
       practice: options.practice,
       deliveryMode: options.deliveryMode,
       durationMs: 120_000,
-      profileId: "essay",
+      profileId: options.profileId ?? "essay",
       judgeAccessCode: judgeAccessCode || undefined,
     }));
     window.location.assign("/viva");
@@ -86,6 +86,25 @@ export default function DemoLanding({ judge, practice }: { judge: DemoFixture; p
         <label className="judge-access-field">JUDGE ACCESS CODE<input type="password" autoComplete="off" value={judgeAccessCode} onChange={(event) => setJudgeAccessCode(event.target.value)} placeholder="Optional" /></label>
       </aside>
     </main>
+
+    <section className="judge-profile-options" aria-labelledby="defense-types-title">
+      <div id="defense-types-title" className="judge-section-rule"><span>THINGS A STUDENT CAN DEFEND</span><span>TWO LIVE PROFILES</span></div>
+      <div className="judge-profile-grid">
+        <article>
+          <h2>Essay</h2>
+          <p>Claims and the evidence behind them.</p>
+          <span>CLAIM 03</span>
+          <a href="#paste-title">or defend your own writing</a>
+        </article>
+        <article>
+          <h2>Code</h2>
+          <p>Design decisions and what breaks without them.</p>
+          <span>DECISION 02</span>
+          <button type="button" onClick={() => start(code, { practice: false, deliveryMode: "voice", profileId: "code" })}>Defend this code</button>
+          <button className="judge-code-text" type="button" onClick={() => start(code, { practice: false, deliveryMode: "text", profileId: "code" })}>Use typed answers</button>
+        </article>
+      </div>
+    </section>
 
     <section className="judge-paste" aria-labelledby="paste-title">
       <div>

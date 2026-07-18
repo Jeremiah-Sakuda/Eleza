@@ -16,6 +16,8 @@ import {
 } from "@/lib/viva-pipeline";
 import { MetaVivaExchange } from "@/app/meta-viva-exchange";
 import { UnderstandingMap } from "@/app/understanding-map";
+import { CodeSourcePanel } from "@/app/viva/code-source-panel";
+import { isPrimaryNode } from "@/lib/claim-graph";
 
 type SessionStatus = "loading" | "idle" | "connecting" | "live" | "ending" | "complete" | "error";
 type SessionPhase = "listening" | "speaking" | "thinking";
@@ -46,6 +48,7 @@ export default function VivaPage() {
   const [stallCount, setStallCount] = useState(0);
   const [error, setError] = useState("");
   const [typedAnswer, setTypedAnswer] = useState("");
+  const [activeTargetId, setActiveTargetId] = useState<string>();
 
   const startedAt = useRef(0);
   const turnsRef = useRef<LiveTurn[]>([]);
@@ -72,7 +75,7 @@ export default function VivaPage() {
     if (!raw) { setStatus("idle"); return; }
     try {
       const parsed = JSON.parse(raw) as Handoff;
-      pipeline.current = new VivaQuestionPipeline(parsed.graph);
+      pipeline.current = new VivaQuestionPipeline(parsed.graph, parsed.profileId ?? "essay");
       setHandoff(parsed);
       setStatus("idle");
     } catch {
@@ -200,6 +203,7 @@ export default function VivaPage() {
 
   function deliverQuestion(question: VivaQuestion, answerCompletedAt?: number) {
     activeQuestion.current = question;
+    setActiveTargetId(question.targetClaimId);
     if (handoff?.deliveryMode === "text") {
       appendTurn("examiner", question.text, question);
       setPhase("listening");
@@ -209,8 +213,8 @@ export default function VivaPage() {
   }
 
   function targetClaimFor(question: VivaQuestion): ClaimGraphNode {
-    const target = handoff?.graph.nodes.find((node) => node.id === question.targetClaimId && node.type === "claim");
-    if (!target) throw new Error(`Question ${question.id} lost its claim trace.`);
+    const target = handoff?.graph.nodes.find((node) => node.id === question.targetClaimId && isPrimaryNode(node, handoff.profileId ?? "essay"));
+    if (!target) throw new Error(`Question ${question.id} lost its graph trace.`);
     return target;
   }
 
@@ -369,7 +373,7 @@ export default function VivaPage() {
     ending.current = false;
     vivaSessionId.current = null;
     practiceSessionId.current = crypto.randomUUID();
-    pipeline.current = new VivaQuestionPipeline(handoff.graph);
+    pipeline.current = new VivaQuestionPipeline(handoff.graph, handoff.profileId ?? "essay");
 
     try {
       const sessionResponse = await fetch("/api/viva/sessions", {
@@ -504,13 +508,14 @@ export default function VivaPage() {
     }
   }
 
-  if (status === "loading") return <div className="viva-empty">Loading claim graph…</div>;
-  if (!handoff) return <div className="viva-empty"><span className="wordmark">ELEZA</span><h1>No claim graph is loaded.</h1><p>Parse the fixture essay first, then proceed from its inspection view.</p><a href="/">Return to submission</a></div>;
+  if (status === "loading") return <div className="viva-empty">Loading submission graph…</div>;
+  if (!handoff) return <div className="viva-empty"><span className="wordmark">ELEZA</span><h1>No submission graph is loaded.</h1><p>Choose a fixture or parse a submission before beginning the viva.</p><a href="/">Return to submission</a></div>;
 
   const label = status === "live" ? "LIVE" : status === "connecting" ? "CONNECTING" : status === "ending" ? "ENDING" : status === "complete" ? "ENDED" : "READY";
   const durationMinutes = Math.round((handoff.durationMs ?? VIVA_DURATION_MS) / 60_000);
   const durationLabel = (handoff.durationMs ?? VIVA_DURATION_MS) === 120_000 ? "about two minutes" : `${durationMinutes} minutes`;
   const isTextMode = handoff.deliveryMode === "text";
+  const isCode = handoff.profileId === "code";
   const health = isTextMode ? "typed-answer mode" : stallCount === 0 ? `${Math.round(maxDeadAirMs)} ms max handoff` : `${stallCount} handoff${stallCount === 1 ? "" : "s"} over 2s`;
 
   return <div className="viva-shell">
@@ -519,15 +524,16 @@ export default function VivaPage() {
 
     <main className="viva-main viva-reasoning-layout">
       <section className="transcript-column">
+        {isCode && <CodeSourcePanel sourceText={handoff.sourceText} graph={handoff.graph} activeTargetId={activeTargetId} decisionLog={decisionLog} />}
         <p className="column-label">TRANSCRIPT</p>
-        {turns.length === 0 && <div className="viva-ready-copy"><h1>{handoff.practice ? "Warm up first." : "Defend the argument."}</h1><p>The AI examiner asks only questions tied to this essay’s parsed claims. {isTextMode ? "Type each answer and send it when complete." : "Answer out loud, then press Finish answer when you are done."} The session lasts {durationLabel}.</p>{!handoff.practice && <p className="viva-clamp-note">Real vivas are teacher-configurable at 5–8 minutes. This hosted demo is capped at about two minutes as a public-cost control.</p>}{handoff.sourceKind === "paste" && <p className="viva-data-note">Your text and transcript are stored to generate your dossier.</p>}<p className="viva-start-disclosure">AI INTERACTION · {handoff.practice ? "UNRECORDED PRACTICE" : "TRANSCRIPT AND ROUTING RECEIPTS RECORDED"}</p><button onClick={startLiveSession} disabled={status === "connecting"}>{status === "connecting" ? "Connecting…" : `Start ${handoff.practice ? "warm-up" : "viva"} — ${durationLabel}`}</button></div>}
+        {turns.length === 0 && <div className="viva-ready-copy"><h1>{handoff.practice ? "Warm up first." : isCode ? "Defend the decisions." : "Defend the argument."}</h1><p>The AI examiner asks only questions tied to this {isCode ? "program’s parsed design decisions" : "essay’s parsed claims"}. {isTextMode ? "Type each answer and send it when complete." : "Answer out loud, then press Finish answer when you are done."} The session lasts {durationLabel}.</p>{!handoff.practice && <p className="viva-clamp-note">Real vivas are teacher-configurable at 5–8 minutes. This hosted demo is capped at about two minutes as a public-cost control.</p>}{handoff.sourceKind === "paste" && <p className="viva-data-note">Your text and transcript are stored to generate your dossier.</p>}<p className="viva-start-disclosure">AI INTERACTION · {handoff.practice ? "UNRECORDED PRACTICE" : "TRANSCRIPT AND ROUTING RECEIPTS RECORDED"}</p><button onClick={startLiveSession} disabled={status === "connecting"}>{status === "connecting" ? "Connecting…" : `Start ${handoff.practice ? "warm-up" : "viva"} — ${durationLabel}`}</button></div>}
         {turns.map((turn) => <article className={`transcript-turn ${turn.speaker}`} key={turn.id}>
           <time>{formatElapsed(turn.elapsedMs)}</time><div><small>{turn.speaker.toUpperCase()}{turn.targetClaimId ? ` · ${turn.targetClaimId}${turn.questionKind === "bridge" ? " · BRIDGE" : ""}` : ""}</small><p>{turn.text}</p></div>
         </article>)}
         {draft && <article className={`transcript-turn ${draft.speaker} draft`}><time>LIVE</time><div><small>{draft.speaker.toUpperCase()}</small><p>{draft.text}</p></div></article>}
         {isTextMode && status === "live" && <form className="typed-answer-form" onSubmit={submitTypedAnswer}>
           <label htmlFor="typed-answer">Your answer</label>
-          <textarea id="typed-answer" value={typedAnswer} onChange={(event) => setTypedAnswer(event.target.value)} placeholder="Explain the claim in your own words…" rows={4} autoFocus />
+          <textarea id="typed-answer" value={typedAnswer} onChange={(event) => setTypedAnswer(event.target.value)} placeholder={isCode ? "Explain why you chose this structure and what could break…" : "Explain the claim in your own words…"} rows={4} autoFocus />
           <button type="submit" disabled={!typedAnswer.trim()}>Send answer</button>
         </form>}
         {status === "complete" && <div className="viva-complete-rule">{handoff.practice ? <>Warm-up complete. Nothing from this session was saved. <a href="/">Return to the judge demo</a>.</> : <>Viva complete. {decisionLog.length} examiner decisions recorded.</>}</div>}
@@ -537,11 +543,11 @@ export default function VivaPage() {
         <p className="column-label">EXAMINER — LIVE REASONING</p>
         <UnderstandingMap graph={handoff.graph} decisionLog={decisionLog} profileId={handoff.profileId ?? "essay"} compact />
         {decisionLog.length === 0 && pendingDecisions === 0 && <p className="reasoning-empty">Specific routing receipts will appear after each completed answer.</p>}
-        {decisionLog.map((entry) => <article className="reasoning-entry" key={entry.id}>
+        {decisionLog.map((entry) => <article className="reasoning-entry" data-decision-id={entry.id} key={entry.id}>
           <time>{formatElapsed(entry.answered_at_ms)}</time>
           <div className="reasoning-route"><span>{entry.target_claim_id}</span><b>{entry.action}</b><span>→ {entry.next_claim_id}</span></div>
           <p>{entry.rationale}</p>
-          {handoff.graph.nodes.find((node) => node.id === entry.target_claim_id && node.type === "claim") && <MetaVivaExchange decision={entry} targetClaim={handoff.graph.nodes.find((node) => node.id === entry.target_claim_id && node.type === "claim")!} />}
+          {handoff.graph.nodes.find((node) => node.id === entry.target_claim_id && isPrimaryNode(node, handoff.profileId ?? "essay")) && <MetaVivaExchange decision={entry} targetClaim={handoff.graph.nodes.find((node) => node.id === entry.target_claim_id && isPrimaryNode(node, handoff.profileId ?? "essay"))!} profileId={handoff.profileId ?? "essay"} />}
         </article>)}
         {pendingDecisions > 0 && <div className="reasoning-pending"><span>deciding</span><b>···</b><small>{pendingDecisions} answer{pendingDecisions === 1 ? "" : "s"} processing</small></div>}
       </aside>

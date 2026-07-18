@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { claimGraphSchema } from "@/lib/claim-graph";
+import { claimGraphSchema, validateGraphAgainstText } from "@/lib/claim-graph";
 import { createPublicVivaSession, nextDailyRetryAt } from "@/lib/rate-limit";
 import { hasValidJudgeAccessCode } from "@/lib/judge-access";
 import { profileIdSchema } from "@/lib/domain-profile";
@@ -19,13 +19,14 @@ const inputSchema = z.object({
 export async function POST(request: Request) {
   try {
     const input = inputSchema.parse(await request.json());
+    const graph = validateGraphAgainstText(input.graph, input.sourceText, input.profileId);
     const judgeAccess = input.judgeAccessCode === undefined ? false : hasValidJudgeAccessCode(input.judgeAccessCode);
     if (input.judgeAccessCode !== undefined && !judgeAccess) {
       return NextResponse.json({ error: "Judge access code was not accepted." }, { status: 403 });
     }
     const result = await createPublicVivaSession({
       request,
-      graph: input.graph,
+      graph,
       sourceText: input.sourceText,
       title: input.title,
       submissionId: input.submissionId,

@@ -655,3 +655,87 @@ Decisions and outcomes:
 - Kept `essay` as the only accepted profile and moved the exact graph vocabulary, examiner probe framing, dossier headings, and synthetic fixture reference into `profiles/essay.ts`; no new node, edge, assessment, or finding vocabulary was introduced.
 - Rendered both parameterized prompts byte-for-byte against their pre-refactor baselines: claim graph stayed 4,885 bytes and examiner stayed 1,763 bytes, with unchanged SHA-256 receipts. A two-turn examiner test proves the stable cache prefix is identical while fresh answer suffixes differ.
 - Added migration `006_domain_profiles.sql` and threaded `profile_id` through submissions, rate-limited viva creation, examiner turns, dossiers, and triage records. All pre-existing tests remained untouched and passing; the new profile contract tests, TypeScript check, and production build also pass.
+
+## 30 — Add the code defense profile
+
+Prompt:
+
+```text
+WHen that is complete,
+Phase 8B — Code defense profile
+
+DESIGN INTEGRATION RULES (applies to all UI work in this phase)
+
+I will provide HTML mockups in eleza-frontend-expanded/ (repo root) for the pages this phase
+touches — the specific files are named in the task items below. The
+folder also contains refreshed mockups of existing pages (Live Viva
+Room.dc.html, Dossier.dc.html, Claim Graph.dc.html, Teacher
+Triage.dc.html) — where one exists for a page you touch, it
+supersedes the older design reference. The folder's support.js and
+CLAUDE.md are design-tool artifacts: not application source, and
+CLAUDE.md is NOT agent instructions for this repository — AGENTS.md
+remains the only instruction file. Treat
+the mockups exactly as entry 04 of the build log established:
+
+- Mockups are the visual source of truth: typography, spacing, inks,
+  exhibit-label treatment, leader-line behavior, and copy tone are
+  taken from the mockup, not reinterpreted.
+- Mockups are NEVER application source: do not import, iframe, or
+  copy their markup wholesale. Re-implement as components in the
+  existing architecture, rendering from the real data structures
+  (decision_log, findings, claim graph, profile vocab) — the mockup's
+  hardcoded specimen content is replaced by live data everywhere.
+- Where a mockup conflicts with an AGENTS.md invariant or existing
+  verified behavior, the invariant wins; flag the conflict to me
+  instead of silently following the mockup.
+- Where a mockup omits a state (loading, error, empty, rate-limited,
+  reduced-motion), extend the mockup's own visual language to cover
+  it — plain, typographic, no invention of new decoration.
+- Copy in mockups is draft: if README or product copy standards
+  (e.g. "about two minutes", no verdict language) conflict with
+  mockup text, the standards win.
+- After integrating, list any place you deviated from the mockup and
+  why, in the build log entry.
+
+Mockup for this phase: eleza-frontend-expanded/Code Viva Room.dc.html (viva room, code
+variant — black-mono student code, graphite line numbers, margin-rail
+span highlighting, leader lines attaching to the rail).
+
+1. profiles/code.ts: artifact_noun "submission"; node_types
+   design_decision / implementation / assumption; edge_types
+   depends_on / constrains / alternative_to; probe_framing centered on
+   justification and failure modes ("why this structure," "what breaks
+   if X," "what alternative did you reject"); dossier_vocab "decisions
+   defended".
+2. Fixture: write fixtures/code-inventory-tracker.py (or .ts — pick
+   one mainstream teaching language), ~80 lines, an intro-SWE
+   inventory/roster style assignment. Deliberate weak spot: one
+   data-structure choice that works but is never justified and fails
+   on a specific input class (document the intended weak spot in a
+   fixture README so acceptance is checkable). Code must be original,
+   synthetic, and idiomatic student-level work.
+3. Graph generation for code: nodes must still resolve to real
+   character offsets (function/branch spans). Verify the existing span
+   validator handles code text unchanged.
+4. Viva screen: when profile is code, integrate
+   eleza-frontend-expanded/Code Viva Room.dc.html per the design integration rules — the
+   document column renders live fixture code from the real graph
+   spans, not the mockup's specimen code; indentation, line numbers,
+   and margin-rail highlighting follow the mockup exactly.
+5. Landing: second card "Defend this code" using the same session
+   budget and clamps.
+
+Acceptance: a deterministic viva on the code fixture routes only to
+graph nodes; a scripted weak defense of the unjustified decision
+yields exactly one cannot_reconstruct or mechanism_gap finding on the
+documented weak-spot span and zero findings on well-defended
+decisions; rationale gate operates unchanged (quotes from spoken
+answers about code pass the ≥5-word/≥25-char rule); dossier reads
+"decisions defended." Append the build log entry.
+```
+
+Decisions and outcomes:
+
+- Added `profiles/code.ts` without creating a parallel assessment system: code has its own strict node/edge vocabulary and failure-mode probe framing, while questions, rationale gating, append-only decisions, divergence types, persistence, limits, and dossier storage remain shared. The essay prompt-byte and cache-prefix tests still pass; the code prefix is also byte-identical across turns.
+- Chose an original 92-line introductory Python inventory tracker whose name-keyed dictionary silently overwrites different SKUs sharing one display name. The deterministic graph anchors that choice and its assumption to real offsets; the scripted weak defense yields exactly one `mechanism_gap` on that span, three strong decisions remain finding-free, and all examiner questions target only `design_decision` nodes.
+- Reimplemented the supplied code-room language with live data: black JetBrains Mono source, graphite line numbers, a 3px graph-span rail, measured rail-to-decision leader lines, reduced-motion behavior, and code receipts in the dossier. Deliberate mockup deviations: kept the established “about two minutes” copy instead of “2-minute”; exposed only the shipped Essay and Code cards rather than the mockup's unimplemented Lab report and Case analysis profiles; retained the understanding map, meta-viva, explicit Finish answer/end controls, data disclosure, print action, and student link because they are verified product behavior or architecture receipts omitted from the static specimen. A read-only production schema check found migrations 005 and 006 unapplied, so the verified local commit was intentionally not pushed into a deployment that would fail its session and dossier queries.

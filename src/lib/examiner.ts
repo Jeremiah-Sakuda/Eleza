@@ -3,7 +3,7 @@ import path from "node:path";
 import OpenAI from "openai";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import { claimGraphSchema, graphNodeSchema } from "@/lib/claim-graph";
+import { claimGraphSchema, graphNodeSchema, isPrimaryNode } from "@/lib/claim-graph";
 import { getDomainProfile, profileIdSchema, type ProfileId } from "@/lib/domain-profile";
 import { examinerDecisionSchema, type ExaminerDecision } from "@/lib/examiner-schema";
 import { MODELS } from "@/lib/models";
@@ -13,9 +13,13 @@ export type { ExaminerDecision } from "@/lib/examiner-schema";
 
 export const examinerInputSchema = z.object({
   transcript_segment: z.string().min(1),
-  target_claim: graphNodeSchema.refine((node) => node.type === "claim", "Target node must be a claim."),
+  target_claim: graphNodeSchema,
   graph: claimGraphSchema,
   profile_id: profileIdSchema.optional(),
+}).superRefine((input, context) => {
+  if (!isPrimaryNode(input.target_claim, input.profile_id ?? "essay")) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["target_claim", "type"], message: "Target node must be examinable for the selected profile." });
+  }
 });
 
 export type ExaminerInput = z.infer<typeof examinerInputSchema>;
@@ -48,7 +52,7 @@ export async function buildExaminerStablePrefix(graph: z.infer<typeof claimGraph
 export function evaluateRationale(decision: ExaminerDecision, input: ExaminerInput): string[] {
   const failures: string[] = [];
   if (decision.target_claim_id !== input.target_claim.id || !decision.rationale.includes(input.target_claim.id)) {
-    failures.push(`Rationale must cite target claim ${input.target_claim.id}.`);
+    failures.push(`Rationale must cite target graph node ${input.target_claim.id}.`);
   }
   const quotedPhrases = [...decision.rationale.matchAll(/["“]([^"”]+)["”]/g)].map((match) => match[1].trim());
   const transcript = input.transcript_segment.toLocaleLowerCase();
@@ -63,19 +67,20 @@ export function evaluateRationale(decision: ExaminerDecision, input: ExaminerInp
 
 export function evaluateRouting(decision: ExaminerDecision, input: ExaminerInput): string[] {
   const failures: string[] = [];
-  const claimIds = new Set(input.graph.nodes.filter((node) => node.type === "claim").map((node) => node.id));
-  if (!claimIds.has(decision.next_claim_id)) failures.push(`Next question must target a claim node; ${decision.next_claim_id} is not one.`);
+  const profileId = input.profile_id ?? "essay";
+  const claimIds = new Set(input.graph.nodes.filter((node) => isPrimaryNode(node, profileId)).map((node) => node.id));
+  if (!claimIds.has(decision.next_claim_id)) failures.push(`Next question must target an examinable graph node; ${decision.next_claim_id} is not one.`);
   if (decision.action === "probe" && decision.next_claim_id !== input.target_claim.id) {
-    failures.push("A probe must remain on the current target claim.");
+    failures.push("A probe must remain on the current target graph node.");
   }
   if (decision.action === "advance" && claimIds.size > 1 && decision.next_claim_id === input.target_claim.id) {
-    failures.push("An advance must move to another claim node.");
+    failures.push("An advance must move to another examinable graph node.");
   }
   if (decision.action === "branch") {
     const connected = input.graph.edges.some((edge) =>
       (edge.source === input.target_claim.id && edge.target === decision.next_claim_id)
       || (edge.target === input.target_claim.id && edge.source === decision.next_claim_id));
-    if (!connected) failures.push("A branch must target a graph node directly connected to the current claim.");
+    if (!connected) failures.push("A branch must target a graph node directly connected to the current target.");
   }
   return failures;
 }

@@ -4,8 +4,9 @@ import { useState } from "react";
 import type { ClaimGraphNode } from "@/lib/claim-graph";
 import type { DecisionLogEntry } from "@/lib/decision-log";
 import type { MetaVivaMessage } from "@/lib/meta-viva";
+import type { ProfileId } from "@/lib/domain-profile";
 
-export function MetaVivaExchange({ decision, targetClaim }: { decision: DecisionLogEntry; targetClaim: ClaimGraphNode }) {
+export function MetaVivaExchange({ decision, targetClaim, profileId = "essay" }: { decision: DecisionLogEntry; targetClaim: ClaimGraphNode; profileId?: ProfileId }) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<MetaVivaMessage[]>([]);
   const [question, setQuestion] = useState("");
@@ -26,7 +27,7 @@ export function MetaVivaExchange({ decision, targetClaim }: { decision: Decision
       const response = await fetch("/api/meta-viva", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ decision, target_claim: targetClaim, messages: nextMessages }),
+        body: JSON.stringify({ decision, target_claim: targetClaim, profile_id: profileId, messages: nextMessages }),
       });
       const result = await response.json() as { answer?: string; error?: string };
       if (!response.ok || !result.answer) throw new Error(result.error || "This routing decision could not be examined.");

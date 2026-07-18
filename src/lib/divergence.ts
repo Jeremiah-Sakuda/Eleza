@@ -7,6 +7,8 @@ import { claimGraphSchema } from "@/lib/claim-graph";
 import { decisionLogEntrySchema } from "@/lib/decision-log";
 import { divergenceAnalysisSchema, divergenceModelAnalysisSchema, type DivergenceAnalysis } from "@/lib/divergence-schema";
 import { MODELS } from "@/lib/models";
+import { isPrimaryNode } from "@/lib/claim-graph";
+import { profileIdSchema } from "@/lib/domain-profile";
 
 export const transcriptTurnSchema = z.object({
   id: z.string().min(1),
@@ -22,6 +24,7 @@ export const divergenceInputSchema = z.object({
   graph: claimGraphSchema,
   transcript: z.array(transcriptTurnSchema),
   decision_log: z.array(decisionLogEntrySchema),
+  profile_id: profileIdSchema.optional(),
 });
 
 export type DivergenceInput = z.infer<typeof divergenceInputSchema>;
@@ -36,7 +39,8 @@ function containsExact(haystack: string, needle: string) {
 
 export function validateDivergenceAnalysis(raw: unknown, rawInput: DivergenceInput): DivergenceAnalysis {
   const input = divergenceInputSchema.parse(rawInput);
-  const claims = new Map(input.graph.nodes.filter((node) => node.type === "claim").map((node) => [node.id, node]));
+  const profileId = input.profile_id ?? "essay";
+  const claims = new Map(input.graph.nodes.filter((node) => isPrimaryNode(node, profileId)).map((node) => [node.id, node]));
   const decisionsByReceipt = new Map(input.decision_log.map((entry) => [`${entry.target_claim_id}:${entry.answered_at_ms}`, entry]));
 
   const validated = divergenceModelAnalysisSchema.superRefine((analysis, context) => {
@@ -45,14 +49,14 @@ export function validateDivergenceAnalysis(raw: unknown, rawInput: DivergenceInp
       const claim = claims.get(finding.claim_id);
       const receipt = decisionsByReceipt.get(`${finding.claim_id}:${finding.timestamp}`);
       if (!claim) {
-        context.addIssue({ code: z.ZodIssueCode.custom, path: ["findings", index, "claim_id"], message: "Finding must reference a claim node." });
+        context.addIssue({ code: z.ZodIssueCode.custom, path: ["findings", index, "claim_id"], message: "Finding must reference a primary examinable node." });
         continue;
       }
       if (finding.doc_span.start !== claim.source_span.start || finding.doc_span.end !== claim.source_span.end) {
-        context.addIssue({ code: z.ZodIssueCode.custom, path: ["findings", index, "doc_span"], message: "Finding span must exactly match the claim source span." });
+        context.addIssue({ code: z.ZodIssueCode.custom, path: ["findings", index, "doc_span"], message: "Finding span must exactly match the target node source span." });
       }
       if (!receipt) {
-        context.addIssue({ code: z.ZodIssueCode.custom, path: ["findings", index, "timestamp"], message: "Finding timestamp must identify a decision for the same claim." });
+        context.addIssue({ code: z.ZodIssueCode.custom, path: ["findings", index, "timestamp"], message: "Finding timestamp must identify a decision for the same target node." });
       } else if (!containsExact(receipt.transcript_segment, finding.transcript_excerpt)) {
         context.addIssue({ code: z.ZodIssueCode.custom, path: ["findings", index, "transcript_excerpt"], message: "Finding excerpt must be an exact phrase from the cited answer." });
       }
@@ -67,7 +71,7 @@ export function validateDivergenceAnalysis(raw: unknown, rawInput: DivergenceInp
         context.addIssue({ code: z.ZodIssueCode.custom, path: ["findings", index, "type"], message: `${finding.type} is not supported by the cited examiner assessment.` });
       }
       if (finding.type !== "inconsistency" && claimDecisions.some((entry) => entry.assessment === "strong")) {
-        context.addIssue({ code: z.ZodIssueCode.custom, path: ["findings", index, "type"], message: "A strongly defended claim cannot receive this finding type." });
+        context.addIssue({ code: z.ZodIssueCode.custom, path: ["findings", index, "type"], message: "A strongly defended node cannot receive this finding type." });
       }
       const fingerprint = `${finding.claim_id}:${finding.type}:${finding.timestamp}`;
       if (seenFindings.has(fingerprint)) {
@@ -80,13 +84,13 @@ export function validateDivergenceAnalysis(raw: unknown, rawInput: DivergenceInp
     for (const [index, defended] of analysis.claims_defended.entries()) {
       const claim = claims.get(defended.claim_id);
       const receipt = decisionsByReceipt.get(`${defended.claim_id}:${defended.timestamp}`);
-      if (!claim) context.addIssue({ code: z.ZodIssueCode.custom, path: ["claims_defended", index, "claim_id"], message: "Defended item must reference a claim node." });
+      if (!claim) context.addIssue({ code: z.ZodIssueCode.custom, path: ["claims_defended", index, "claim_id"], message: "Defended item must reference a primary examinable node." });
       if (!receipt || receipt.assessment !== "strong") {
-        context.addIssue({ code: z.ZodIssueCode.custom, path: ["claims_defended", index, "timestamp"], message: "Defended item must cite a strong decision for the same claim." });
+        context.addIssue({ code: z.ZodIssueCode.custom, path: ["claims_defended", index, "timestamp"], message: "Defended item must cite a strong decision for the same target node." });
       } else if (!containsExact(receipt.transcript_segment, defended.transcript_excerpt)) {
         context.addIssue({ code: z.ZodIssueCode.custom, path: ["claims_defended", index, "transcript_excerpt"], message: "Defended excerpt must be an exact phrase from the cited answer." });
       }
-      if (seenDefended.has(defended.claim_id)) context.addIssue({ code: z.ZodIssueCode.custom, path: ["claims_defended", index], message: "List each defended claim once." });
+      if (seenDefended.has(defended.claim_id)) context.addIssue({ code: z.ZodIssueCode.custom, path: ["claims_defended", index], message: "List each defended item once." });
       seenDefended.add(defended.claim_id);
     }
   }).parse(raw);
@@ -98,7 +102,7 @@ export async function analyzeDivergence(
   options: { generate?: DivergenceGenerator; maxRetries?: number } = {},
 ) {
   const input = divergenceInputSchema.parse(rawInput);
-  const prompt = await readFile(promptPath, "utf8");
+  const prompt = (await readFile(promptPath, "utf8")).replace("{{PROFILE_CONTEXT}}", divergenceProfileContext(input.profile_id ?? "essay"));
   const generate = options.generate ?? generateWithOpenAI;
   const failures: string[] = [];
   const maxRetries = options.maxRetries ?? 1;
@@ -115,6 +119,12 @@ export async function analyzeDivergence(
     }
   }
   throw new Error(`Divergence analysis failed receipt validation: ${failures.join(" | ")}`);
+}
+
+function divergenceProfileContext(profileId: "essay" | "code") {
+  return profileId === "code"
+    ? "This is a code defense. Primary examinable nodes are `design_decision` nodes. Assess whether the student can justify the structure, explain its implementation and constraints, identify what input or change would break it, and name rejected alternatives. A mechanism gap may be a missing failure mode or unexplained dependency; do not treat code style as evidence."
+    : "This is an essay defense. Primary examinable nodes are `claim` nodes. Assess whether the student can reconstruct each claim's evidence, mechanism, dependencies, and relationship to the argument.";
 }
 
 async function generateWithOpenAI({ model, prompt, input, feedback }: Parameters<DivergenceGenerator>[0]) {

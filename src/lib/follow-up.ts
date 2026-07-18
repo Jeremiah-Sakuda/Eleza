@@ -3,9 +3,10 @@ import path from "node:path";
 import OpenAI from "openai";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import { claimGraphSchema, type ClaimGraph } from "@/lib/claim-graph";
+import { claimGraphSchema, isPrimaryNode, type ClaimGraph } from "@/lib/claim-graph";
 import { divergenceFindingBaseSchema, type DivergenceFinding } from "@/lib/divergence-schema";
 import { MODELS } from "@/lib/models";
+import { profileIdSchema, type ProfileId } from "@/lib/domain-profile";
 
 const groupSchema = z.object({
   claim_id: z.string().min(1),
@@ -14,15 +15,15 @@ const groupSchema = z.object({
 });
 
 const outputSchema = z.object({ findings: z.array(groupSchema) });
-const inputSchema = z.object({ findings: z.array(divergenceFindingBaseSchema), graph: claimGraphSchema });
+const inputSchema = z.object({ findings: z.array(divergenceFindingBaseSchema), graph: claimGraphSchema, profile_id: profileIdSchema.optional() });
 type Input = z.infer<typeof inputSchema>;
 export type FollowUpGenerator = (args: { prompt: string; input: Input; feedback: string[] }) => Promise<unknown>;
 
 const promptPath = path.join(process.cwd(), "prompts", "follow-up.md");
 
-export async function generateFindingFollowUps(findings: DivergenceFinding[], graph: ClaimGraph, options: { generate?: FollowUpGenerator } = {}) {
+export async function generateFindingFollowUps(findings: DivergenceFinding[], graph: ClaimGraph, options: { generate?: FollowUpGenerator; profileId?: ProfileId } = {}) {
   if (findings.length === 0) return [];
-  const input = inputSchema.parse({ findings, graph });
+  const input = inputSchema.parse({ findings, graph, profile_id: options.profileId });
   const prompt = await readFile(promptPath, "utf8");
   const generate = options.generate ?? generateWithOpenAI;
   const feedback: string[] = [];
@@ -67,7 +68,7 @@ async function generateWithOpenAI({ prompt, input, feedback }: Parameters<Follow
       { role: "system", content: prompt },
       { role: "user", content: JSON.stringify({
         findings: input.findings,
-        claim_nodes: input.graph.nodes.filter((node) => node.type === "claim" && input.findings.some((finding) => finding.claim_id === node.id)),
+        claim_nodes: input.graph.nodes.filter((node) => isPrimaryNode(node, input.profile_id ?? "essay") && input.findings.some((finding) => finding.claim_id === node.id)),
         validation_feedback: feedback,
       }) },
     ],

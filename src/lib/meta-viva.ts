@@ -3,9 +3,10 @@ import path from "node:path";
 import OpenAI from "openai";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import { graphNodeSchema } from "@/lib/claim-graph";
+import { graphNodeSchema, isPrimaryNode } from "@/lib/claim-graph";
 import { decisionLogEntrySchema } from "@/lib/decision-log";
 import { MODELS } from "@/lib/models";
+import { profileIdSchema } from "@/lib/domain-profile";
 
 const messageSchema = z.object({
   role: z.enum(["user", "assistant"]),
@@ -14,11 +15,15 @@ const messageSchema = z.object({
 
 export const metaVivaInputSchema = z.object({
   decision: decisionLogEntrySchema,
-  target_claim: graphNodeSchema.refine((node) => node.type === "claim", "Meta-viva target must be a claim."),
+  target_claim: graphNodeSchema,
+  profile_id: profileIdSchema.optional(),
   messages: z.array(messageSchema).min(1).max(6),
 }).superRefine((input, context) => {
   if (input.decision.target_claim_id !== input.target_claim.id) {
-    context.addIssue({ code: z.ZodIssueCode.custom, path: ["target_claim"], message: "Target claim must match the decision log entry." });
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["target_claim"], message: "Target graph node must match the decision log entry." });
+  }
+  if (!isPrimaryNode(input.target_claim, input.profile_id ?? "essay")) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["target_claim", "type"], message: "Meta-viva target must be examinable for the selected profile." });
   }
   if (input.messages.filter((message) => message.role === "user").length > 3) {
     context.addIssue({ code: z.ZodIssueCode.custom, path: ["messages"], message: "Meta-viva exchanges allow at most three user turns." });
@@ -56,7 +61,7 @@ export async function answerMetaViva(rawInput: MetaVivaInput, options: { generat
 function groundedLimitation(input: MetaVivaInput) {
   const segments = input.decision.rationale.split(/["“”]/).map((part) => part.trim()).filter((part) => part.length >= 12);
   const excerpt = (segments.sort((a, b) => b.length - a.length)[0] ?? input.decision.rationale).slice(0, 180);
-  return `For ${input.target_claim.id}, I can only answer from this routing record. Its rationale says "${excerpt}". The available decision, claim, and transcript segment do not establish anything beyond that record.`;
+  return `For ${input.target_claim.id}, I can only answer from this routing record. Its rationale says "${excerpt}". The available decision, graph node, and transcript segment do not establish anything beyond that record.`;
 }
 
 async function generateWithOpenAI({ prompt, input }: { prompt: string; input: MetaVivaInput }) {

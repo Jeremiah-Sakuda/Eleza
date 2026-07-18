@@ -1,10 +1,12 @@
 import type { ClaimGraph } from "@/lib/claim-graph";
 import type { DecisionLogEntry } from "@/lib/decision-log";
+import { isPrimaryNode } from "@/lib/claim-graph";
+import type { ProfileId } from "@/lib/domain-profile";
 
 export type UnderstandingStatus = "examined" | "being_examined" | "not_yet_examined";
 
-export function understandingMapState(graph: ClaimGraph, decisionLog: DecisionLogEntry[]) {
-  const claims = graph.nodes.filter((node) => node.type === "claim");
+export function understandingMapState(graph: ClaimGraph, decisionLog: DecisionLogEntry[], profileId: ProfileId = "essay") {
+  const claims = graph.nodes.filter((node) => isPrimaryNode(node, profileId));
   const ordered = [...decisionLog].sort((a, b) => a.sequence - b.sequence);
   const latest = ordered.at(-1);
   const adequatelyDefended = new Set(ordered.filter((entry) => entry.assessment === "strong").map((entry) => entry.target_claim_id));

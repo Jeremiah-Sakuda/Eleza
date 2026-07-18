@@ -1,0 +1,32 @@
+{
+  "answers": [
+    {
+      "claim_id": "design_decision_name_key",
+      "timestamp": 28000,
+      "answer": "I used a dictionary because it seemed simple, but I cannot explain what input makes the name key unsafe.",
+      "assessment": "partial"
+    },
+    {
+      "claim_id": "design_decision_sorted_low_stock",
+      "timestamp": 56000,
+      "answer": "The report sorts by quantity first so the most urgent items appear first, then by normalized name to keep equal quantities stable for a reader.",
+      "assessment": "strong"
+    },
+    {
+      "claim_id": "design_decision_decimal_money",
+      "timestamp": 84000,
+      "answer": "Decimal avoids binary floating point rounding in prices, and the zero Decimal start keeps every sum in the same numeric type.",
+      "assessment": "strong"
+    },
+    {
+      "claim_id": "design_decision_skip_bad_rows",
+      "timestamp": 112000,
+      "answer": "The loader catches only missing fields and conversion failures so one malformed CSV row does not prevent later valid inventory rows from loading.",
+      "assessment": "strong"
+    }
+  ],
+  "expected_finding": {
+    "claim_id": "design_decision_name_key",
+    "type": "mechanism_gap"
+  }
+}

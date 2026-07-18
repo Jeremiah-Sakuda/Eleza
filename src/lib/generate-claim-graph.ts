@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import OpenAI from "openai";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import { claimGraphSchema, type ClaimGraph, validateGraphAgainstText } from "@/lib/claim-graph";
+import { claimGraphSchemaForProfile, isPrimaryNode, type ClaimGraph, validateGraphAgainstText } from "@/lib/claim-graph";
 import { claimGraphVocabularyBlock, getDomainProfile, type ProfileId } from "@/lib/domain-profile";
 import { MODELS } from "@/lib/models";
 
@@ -16,32 +16,42 @@ export async function renderClaimGraphPrompt(sourceText: string, profileId: Prof
 }
 
 export async function generateClaimGraph(sourceText: string, options: { minimumClaimCount?: number; profileId?: ProfileId } = {}): Promise<ClaimGraph> {
-  const minimumClaimCount = options.minimumClaimCount ?? 6;
-  if (!process.env.OPENAI_API_KEY) return generateLocalDemoGraph(sourceText);
+  const profileId = options.profileId ?? "essay";
+  const minimumClaimCount = options.minimumClaimCount ?? (profileId === "code" ? 4 : 6);
+  if (!process.env.OPENAI_API_KEY) return generateLocalDemoGraph(sourceText, profileId);
 
-  const prompt = await renderClaimGraphPrompt(sourceText, options.profileId);
+  const prompt = await renderClaimGraphPrompt(sourceText, profileId);
+  const profileSchema = claimGraphSchemaForProfile(profileId);
+  const primaryType = getDomainProfile(profileId).node_types[0];
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const response = await openai.responses.create({
       model: MODELS.claimGraph,
-      input: attempt === 0 ? prompt : `${prompt}\n\nYour first output did not contain ${minimumClaimCount} claim nodes. Re-extract with at least ${minimumClaimCount} distinct claim nodes when the text supports them.`,
+      input: attempt === 0 ? prompt : `${prompt}\n\nYour first output did not return a valid ${profileId} graph with ${minimumClaimCount} ${primaryType} nodes. Re-extract with at least ${minimumClaimCount} distinct ${primaryType} nodes when the submission supports them.`,
       text: {
         format: {
           type: "json_schema",
           name: "claim_graph",
           strict: true,
-          schema: zodToJsonSchema(claimGraphSchema, { $refStrategy: "none" }),
+          schema: zodToJsonSchema(profileSchema, { $refStrategy: "none" }),
         },
       },
     });
     if (!response.output_text) continue;
-    const graph = validateGraphAgainstText(claimGraphSchema.parse(JSON.parse(response.output_text)), sourceText);
-    if (graph.nodes.filter((node) => node.type === "claim").length >= minimumClaimCount) return graph;
+    try {
+      const graph = validateGraphAgainstText(profileSchema.parse(JSON.parse(response.output_text)), sourceText, profileId);
+      if (graph.nodes.filter((node) => isPrimaryNode(node, profileId)).length >= minimumClaimCount) return graph;
+    } catch {
+      // DECISION: a profile-invalid graph gets the same single bounded re-extraction as an under-granular graph.
+    }
   }
-  throw new Error("This text does not have enough argumentative structure to examine. Eleza works best on writing that makes a position and supports it with several distinct claims.");
+  throw new Error(profileId === "code"
+    ? "This program does not expose enough distinct design decisions to examine. Eleza works best on code with several choices, constraints, or failure modes to defend."
+    : "This text does not have enough argumentative structure to examine. Eleza works best on writing that makes a position and supports it with several distinct claims.");
 }
 
-function generateLocalDemoGraph(sourceText: string): ClaimGraph {
+function generateLocalDemoGraph(sourceText: string, profileId: ProfileId): ClaimGraph {
+  if (profileId === "code") throw new Error("Code graph generation requires OPENAI_API_KEY outside the bundled deterministic fixture.");
   // DECISION: preserve a deterministic local path so the judge demo remains inspectable without credentials.
   const paragraphs = [...sourceText.matchAll(/\S[\s\S]*?(?=\n\s*\n|$)/g)].map((match) => ({
     text: match[0], start: match.index ?? 0,
@@ -79,5 +89,5 @@ function generateLocalDemoGraph(sourceText: string): ClaimGraph {
     target: node.id.replace("evidence", "claim"),
     type: "supports" as const,
   }));
-  return validateGraphAgainstText({ nodes: [...claimNodes, ...evidenceNodes], edges: [...claimEdges, ...evidenceEdges] }, sourceText);
+  return validateGraphAgainstText({ nodes: [...claimNodes, ...evidenceNodes], edges: [...claimEdges, ...evidenceEdges] }, sourceText, profileId);
 }
