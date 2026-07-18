@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { claimGraphSchema, type ClaimGraph } from "@/lib/claim-graph";
+import { profileIdSchema, type ProfileId } from "@/lib/domain-profile";
 import type { ExaminerResult } from "@/lib/examiner";
 import { examinerDecisionSchema } from "@/lib/examiner-schema";
 
@@ -27,11 +28,13 @@ export async function createVivaSession(
   submissionId?: string,
   sourceText?: string,
   title?: string,
+  profileId: ProfileId = "essay",
 ) {
   const supabase = serviceClient();
   const payload = {
     graph: claimGraphSchema.parse(graph),
     submission_id: submissionId || null,
+    profile_id: profileIdSchema.parse(profileId),
     source_text: sourceText || null,
     title: title || null,
     status: "live",
@@ -70,7 +73,7 @@ export async function completeVivaSession(sessionId: string) {
 export async function assertVivaWithinDuration(sessionId: string) {
   const supabase = serviceClient();
   const result = await supabase.from("viva_sessions")
-    .select("created_at, duration_limit_ms, status")
+    .select("created_at, duration_limit_ms, status, profile_id")
     .eq("id", sessionId)
     .single();
   if (result.error) throw new Error(`Could not verify viva duration: ${result.error.message}`);
@@ -79,4 +82,5 @@ export async function assertVivaWithinDuration(sessionId: string) {
     if (result.data.status === "live") await supabase.from("viva_sessions").update({ status: "abandoned" }).eq("id", sessionId);
     throw new Error("This viva has reached its server-enforced time limit.");
   }
+  return { profileId: profileIdSchema.parse(result.data.profile_id) };
 }

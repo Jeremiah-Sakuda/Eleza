@@ -12,8 +12,8 @@ const inputSchema = examinerInputSchema.extend({
 export async function POST(request: Request) {
   try {
     const input = inputSchema.parse(await request.json());
-    await assertVivaWithinDuration(input.session_id);
-    const decision = await examineAnswer(input);
+    const session = await assertVivaWithinDuration(input.session_id);
+    const decision = await examineAnswer({ ...input, profile_id: session.profileId });
     if (decision.quality_gate.status !== "passed") {
       throw new Error("Examiner rationale failed the receipt gate after all retries; no routing decision was emitted.");
     }

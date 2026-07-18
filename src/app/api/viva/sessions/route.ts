@@ -3,6 +3,7 @@ import { z } from "zod";
 import { claimGraphSchema } from "@/lib/claim-graph";
 import { createPublicVivaSession, nextDailyRetryAt } from "@/lib/rate-limit";
 import { hasValidJudgeAccessCode } from "@/lib/judge-access";
+import { profileIdSchema } from "@/lib/domain-profile";
 
 const inputSchema = z.object({
   graph: claimGraphSchema,
@@ -12,6 +13,7 @@ const inputSchema = z.object({
   durationMs: z.number().int().positive().optional(),
   sessionKind: z.enum(["judge", "practice"]).optional(),
   judgeAccessCode: z.string().min(1).max(256).optional(),
+  profileId: profileIdSchema.default("essay"),
 });
 
 export async function POST(request: Request) {
@@ -27,6 +29,7 @@ export async function POST(request: Request) {
       sourceText: input.sourceText,
       title: input.title,
       submissionId: input.submissionId,
+      profileId: input.profileId,
       durationMs: input.durationMs,
       sessionKind: input.sessionKind,
       judgeAccess,

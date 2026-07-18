@@ -4,8 +4,10 @@ import { PrintDossierButton } from "@/app/dossier/print-dossier-button";
 import { StudentDossierLink } from "@/app/dossier/student-dossier-link";
 import { MetaVivaExchange } from "@/app/meta-viva-exchange";
 import { UnderstandingMap } from "@/app/understanding-map";
+import { getDomainProfile } from "@/lib/domain-profile";
 
 export function DossierView({ dossier, studentPath }: { dossier: Dossier; studentPath?: string }) {
+  const profile = getDomainProfile(dossier.profileId);
   const claimNodes = new Map(dossier.graph.nodes.filter((node) => node.type === "claim").map((node) => [node.id, node]));
   const transcriptSequence = new Map(
     dossier.transcript.map((turn) => [`${turn.target_claim_id}:${turn.elapsed_ms}`, turn.sequence]),
@@ -23,9 +25,9 @@ export function DossierView({ dossier, studentPath }: { dossier: Dossier; studen
       <em>This dossier presents evidence. Conclusions belong to the teacher.</em>
     </header>
 
-    <UnderstandingMap graph={dossier.graph} decisionLog={dossier.decisionLog} />
+    <UnderstandingMap graph={dossier.graph} decisionLog={dossier.decisionLog} profileId={dossier.profileId} />
 
-    <DossierSection title="CLAIMS DEFENDED">
+    <DossierSection title={profile.dossier_vocab.claims_defended}>
       {dossier.analysis.claims_defended.length === 0 && <p className="dossier-empty">No claim met the defended-claim receipt rule.</p>}
       {dossier.analysis.claims_defended.map((defended, index) => {
         const claim = claimNodes.get(defended.claim_id);

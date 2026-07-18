@@ -2,13 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { ClaimGraph, ClaimGraphNode } from "@/lib/claim-graph";
+import type { ProfileId } from "@/lib/domain-profile";
 
 type Result = {
   sourceText: string;
   graph: ClaimGraph;
-  persistence: { persisted: boolean; submissionId?: string; graphId?: string };
+  persistence: { persisted: boolean; submissionId?: string; graphId?: string; profileId: ProfileId };
 };
-type InspectionHandoff = { title: string; sourceKind: "paste"; durationMs: number; judgeAccessCode?: string; result: Result };
+type InspectionHandoff = { title: string; sourceKind: "paste"; durationMs: number; profileId: ProfileId; judgeAccessCode?: string; result: Result };
 
 const colors = { claim: "#3455db", evidence: "#16836d", citation: "#9b5f18" };
 
@@ -63,6 +64,7 @@ export default function InspectionPage() {
       deliveryMode,
       practice: false,
       sourceKind: handoff?.sourceKind,
+      profileId: handoff?.profileId ?? result.persistence.profileId,
       judgeAccessCode: handoff?.judgeAccessCode,
     }));
     window.location.assign("/viva");

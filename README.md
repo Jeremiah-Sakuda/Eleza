@@ -29,6 +29,8 @@ Eleza is three connected systems:
 2. **Live viva:** the Realtime voice model speaks, while a separate GPT-5.6 examiner evaluates each completed answer and chooses `probe`, `branch`, or `advance`. Every accepted decision is appended to one decision log used by both the live reasoning pane and the dossier.
 3. **Post-viva divergence analysis:** the transcript is compared with graph-owned document spans for only `cannot_reconstruct`, `mechanism_gap`, or `inconsistency`. The dossier links each finding's timestamp, answer excerpt, claim, and exact document span.
 
+Domain vocabulary is resolved through [`profiles/essay.ts`](./profiles/essay.ts). Only the `essay` profile ships; this extraction changes no question, graph, or dossier behavior.
+
 The architecture has five non-negotiable invariants:
 
 - The Realtime voice model speaks externally routed questions; the GPT-5.6 examiner chooses every next move.
@@ -80,7 +82,7 @@ Every non-obvious `// DECISION:` receipt currently in the implementation is refl
 | Source | Decision and reason |
 |---|---|
 | [`src/lib/generate-claim-graph.ts`](./src/lib/generate-claim-graph.ts) | Keep a deterministic local graph path so the curated judge demo remains inspectable without credentials. |
-| [`src/lib/examiner.ts`](./src/lib/examiner.ts) | Keep the prompt and graph as a byte-identical cached prefix; only the latest answer is fresh input. |
+| [`src/lib/examiner.ts`](./src/lib/examiner.ts) | Keep the rendered profile prompt and graph as a byte-identical cached prefix within each viva; only the latest answer is fresh input. |
 | [`src/lib/viva-pipeline.ts`](./src/lib/viva-pipeline.ts) | Precompute deterministic bridge questions so latency never grants routing authority to the voice model. |
 | [`src/app/api/viva/turn/route.ts`](./src/app/api/viva/turn/route.ts) | Persist an accepted examiner decision before exposing it to the UI, preventing parallel reasoning state. |
 | [`src/lib/divergence.ts`](./src/lib/divergence.ts) | Send source evidence once and return compact classifications; transcript and decision records remain canonical. |
@@ -139,6 +141,7 @@ Apply every SQL file in [`supabase/migrations`](./supabase/migrations) in filena
 3. `003_dossiers.sql`
 4. `004_demo_rate_limits.sql`
 5. `005_judge_access.sql`
+6. `006_domain_profiles.sql`
 
 Then start the app:
 

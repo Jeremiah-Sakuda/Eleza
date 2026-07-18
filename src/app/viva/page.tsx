@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ClaimGraph, ClaimGraphNode } from "@/lib/claim-graph";
 import type { DecisionLogEntry } from "@/lib/decision-log";
 import type { ExaminerResult } from "@/lib/examiner";
+import type { ProfileId } from "@/lib/domain-profile";
 import { realtimeAudioInputEvent, webRtcFailureMessage } from "@/lib/realtime-control";
 import { formatElapsed, type TranscriptTurn } from "@/lib/scripted-viva";
 import {
@@ -28,6 +29,7 @@ type Handoff = {
   practice?: boolean;
   sourceKind?: "paste";
   judgeAccessCode?: string;
+  profileId?: ProfileId;
 };
 type LiveTurn = TranscriptTurn & { targetClaimId?: string; questionKind?: VivaQuestion["kind"] };
 
@@ -223,6 +225,7 @@ export default function VivaPage() {
           transcript_segment: transcript,
           target_claim: targetClaimFor(question),
           graph: handoff.graph,
+          profile_id: handoff.profileId ?? "essay",
         } : {
           session_id: vivaSessionId.current,
           sequence,
@@ -230,6 +233,7 @@ export default function VivaPage() {
           transcript_segment: transcript,
           target_claim: targetClaimFor(question),
           graph: handoff.graph,
+          profile_id: handoff.profileId ?? "essay",
         }),
       });
       const result = await response.json() as { entry?: DecisionLogEntry; error?: string } & Partial<ExaminerResult>;
@@ -378,6 +382,7 @@ export default function VivaPage() {
           title: handoff.title,
           durationMs: handoff.durationMs,
           sessionKind: handoff.practice ? "practice" : "judge",
+          profileId: handoff.profileId ?? "essay",
           judgeAccessCode: handoff.judgeAccessCode,
         }),
       });
@@ -530,7 +535,7 @@ export default function VivaPage() {
 
       <aside className="reasoning-pane">
         <p className="column-label">EXAMINER — LIVE REASONING</p>
-        <UnderstandingMap graph={handoff.graph} decisionLog={decisionLog} compact />
+        <UnderstandingMap graph={handoff.graph} decisionLog={decisionLog} profileId={handoff.profileId ?? "essay"} compact />
         {decisionLog.length === 0 && pendingDecisions === 0 && <p className="reasoning-empty">Specific routing receipts will appear after each completed answer.</p>}
         {decisionLog.map((entry) => <article className="reasoning-entry" key={entry.id}>
           <time>{formatElapsed(entry.answered_at_ms)}</time>

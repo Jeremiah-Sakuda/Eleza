@@ -5,6 +5,7 @@ import { decisionLogEntrySchema, serviceClient, type DecisionLogEntry } from "@/
 import { analyzeDivergence, transcriptTurnSchema, type TranscriptTurnInput } from "@/lib/divergence";
 import { divergenceAnalysisSchema, type DivergenceAnalysis } from "@/lib/divergence-schema";
 import { attachFindingFollowUps, generateFindingFollowUps } from "@/lib/follow-up";
+import { profileIdSchema, type ProfileId } from "@/lib/domain-profile";
 
 const persistedTurnSchema = z.object({
   id: z.string().uuid(),
@@ -32,6 +33,7 @@ export type Dossier = {
   createdAt: string;
   completedAt: string | null;
   durationMs: number;
+  profileId: ProfileId;
 };
 
 export type TriageRow = {
@@ -42,6 +44,7 @@ export type TriageRow = {
   findingCount: number;
   findingTypeSummary: string;
   completedAt: string;
+  profileId: ProfileId;
 };
 
 export function formatFindingTypeSummary(findings: DivergenceAnalysis["findings"]) {
@@ -77,7 +80,7 @@ export async function generateAndPersistDossier(sessionId: string) {
   if (existing.data) return { id: existing.data.id as string, existing: true };
 
   const [sessionResult, transcriptResult, logResult] = await Promise.all([
-    supabase.from("viva_sessions").select("graph, source_text").eq("id", sessionId).single(),
+    supabase.from("viva_sessions").select("graph, source_text, profile_id").eq("id", sessionId).single(),
     supabase.from("transcript_turns").select("*").eq("viva_session_id", sessionId).order("sequence"),
     supabase.from("decision_log").select("*").eq("viva_session_id", sessionId).order("sequence"),
   ]);
@@ -87,6 +90,7 @@ export async function generateAndPersistDossier(sessionId: string) {
 
   const sourceText = z.string().min(1).parse(sessionResult.data.source_text);
   const graph = claimGraphSchema.parse(sessionResult.data.graph);
+  const profileId = profileIdSchema.parse(sessionResult.data.profile_id);
   const transcriptRows = z.array(persistedTurnSchema).parse(transcriptResult.data);
   const transcript = transcriptRows.map((turn) => transcriptTurnSchema.parse({
     id: turn.id,
@@ -106,6 +110,7 @@ export async function generateAndPersistDossier(sessionId: string) {
 
   const saved = await supabase.from("dossiers").insert({
     viva_session_id: sessionId,
+    profile_id: profileId,
     prompt_version: "divergence-v1+follow-up-v1",
     analysis,
     analysis_attempts: result.attempts,
@@ -117,7 +122,7 @@ export async function generateAndPersistDossier(sessionId: string) {
 export async function loadDossier(id: string): Promise<Dossier> {
   const supabase = serviceClient();
   const dossierResult = await supabase.from("dossiers")
-    .select("id, viva_session_id, analysis, created_at")
+    .select("id, viva_session_id, profile_id, analysis, created_at")
     .eq("id", id)
     .single();
   if (dossierResult.error) throw new Error(`Could not load dossier: ${dossierResult.error.message}`);
@@ -143,13 +148,14 @@ export async function loadDossier(id: string): Promise<Dossier> {
     createdAt: z.string().parse(dossierResult.data.created_at),
     completedAt: z.string().nullable().parse(sessionResult.data.completed_at),
     durationMs: transcript.reduce((maximum, turn) => Math.max(maximum, turn.elapsed_ms), 0),
+    profileId: profileIdSchema.parse(dossierResult.data.profile_id),
   };
 }
 
 export async function listDossierTriage(): Promise<TriageRow[]> {
   const supabase = serviceClient();
   const dossiers = await supabase.from("dossiers")
-    .select("id, viva_session_id, analysis, created_at")
+    .select("id, viva_session_id, profile_id, analysis, created_at")
     .order("created_at", { ascending: false })
     .limit(100);
   if (dossiers.error) throw new Error(`Could not load dossier triage: ${dossiers.error.message}`);
@@ -179,6 +185,7 @@ export async function listDossierTriage(): Promise<TriageRow[]> {
       findingCount: analysis.findings.length,
       findingTypeSummary: formatFindingTypeSummary(analysis.findings),
       completedAt: z.string().nullable().parse(session?.completed_at ?? null) ?? z.string().parse(row.created_at),
+      profileId: profileIdSchema.parse(row.profile_id),
     };
   }).sort((a, b) => b.findingCount - a.findingCount || b.completedAt.localeCompare(a.completedAt));
 }

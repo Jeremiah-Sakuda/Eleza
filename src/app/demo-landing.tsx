@@ -24,6 +24,7 @@ export default function DemoLanding({ judge, practice }: { judge: DemoFixture; p
       practice: options.practice,
       deliveryMode: options.deliveryMode,
       durationMs: 120_000,
+      profileId: "essay",
       judgeAccessCode: judgeAccessCode || undefined,
     }));
     window.location.assign("/viva");
@@ -40,7 +41,7 @@ export default function DemoLanding({ judge, practice }: { judge: DemoFixture; p
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: pastedText }),
       });
-      const result = await response.json() as { sourceText?: string; graph?: ClaimGraph; persistence?: { persisted: boolean; submissionId?: string; graphId?: string }; error?: string };
+      const result = await response.json() as { sourceText?: string; graph?: ClaimGraph; persistence?: { persisted: boolean; submissionId?: string; graphId?: string; profileId: "essay" }; error?: string };
       if (!response.ok || !result.sourceText || !result.graph || !result.persistence) {
         throw new Error(result.error || "This text could not be mapped into an argument.");
       }
@@ -48,6 +49,7 @@ export default function DemoLanding({ judge, practice }: { judge: DemoFixture; p
         title: "Pasted argumentative writing",
         sourceKind: "paste",
         durationMs: 120_000,
+        profileId: "essay",
         judgeAccessCode: judgeAccessCode || undefined,
         result,
       }));

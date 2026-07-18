@@ -615,3 +615,43 @@ Decisions and outcomes:
 - Enforced rationale receipts as exact transcript substrings of at least five words or 25 contiguous characters on every examiner attempt, with boundary and wrong-order tests proving short or paraphrased excerpts cannot pass.
 - Kept the judge bypass server-side and auditable: a constant-time checked access code selects a separate daily tier while the 150-second clamp remains unchanged; meta-viva exchanges remain ephemeral and all coverage UI derives only from the existing claim graph and append-only decision log.
 - Rejected audio retention and documented why: timestamped transcripts preserve the evidentiary receipt without retaining biometric voice data. Added Sol-generated, claim-bound teacher follow-ups to the existing dossier analysis record, then consolidated design references under `design/` and the build instructions under canonical `AGENTS.md`.
+
+## 29 — Extract the essay domain into a behavior-preserving profile
+
+Prompt:
+
+```text
+Phase 8A  Domain profile system (pure refactor; zero behavior change)
+
+Extract the implicit essay domain into an explicit profile system.
+
+1. Create profiles/essay.ts defining: artifact_noun, node_types
+   (claim/evidence/citation), edge_types (supports/rebuts/depends_on),
+   probe_framing block (current examiner framing, verbatim),
+   dossier_vocab ("claims defended"), and fixture reference.
+2. Parameterize the graph prompt: one base template in
+   /prompts/claim-graph.md with a profile vocabulary block injected;
+   the rendered essay-profile prompt must be semantically identical to
+   today's prompt (diff the rendered output and show me).
+3. Parameterize the examiner's probe-framing block the same way; the
+   byte-identical cached-prefix rule from AGENTS.md still applies per
+   profile (prefix = prompt + graph + profile block; verify caching
+   still hits across turns within one viva).
+4. Migration 00N: submissions.profile_id text not null default
+   'essay'. Thread profile_id from submission through viva, dossier,
+   and triage queries.
+5. Dossier and understanding-map section headings read from
+   dossier_vocab.
+
+Acceptance: ALL existing tests pass unchanged; a full fixture-essay
+viva (deterministic run) produces a dossier byte-equivalent to
+pre-refactor except for any profile-threading metadata; rendered essay
+prompt diff shows vocabulary-block extraction only. This phase ships
+NO new domains. Append the build log entry.
+```
+
+Decisions and outcomes:
+
+- Kept `essay` as the only accepted profile and moved the exact graph vocabulary, examiner probe framing, dossier headings, and synthetic fixture reference into `profiles/essay.ts`; no new node, edge, assessment, or finding vocabulary was introduced.
+- Rendered both parameterized prompts byte-for-byte against their pre-refactor baselines: claim graph stayed 4,885 bytes and examiner stayed 1,763 bytes, with unchanged SHA-256 receipts. A two-turn examiner test proves the stable cache prefix is identical while fresh answer suffixes differ.
+- Added migration `006_domain_profiles.sql` and threaded `profile_id` through submissions, rate-limited viva creation, examiner turns, dossiers, and triage records. All pre-existing tests remained untouched and passing; the new profile contract tests, TypeScript check, and production build also pass.

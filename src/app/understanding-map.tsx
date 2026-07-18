@@ -1,15 +1,17 @@
 import type { ClaimGraph } from "@/lib/claim-graph";
 import type { DecisionLogEntry } from "@/lib/decision-log";
 import { understandingMapState } from "@/lib/understanding-map";
+import { getDomainProfile, type ProfileId } from "@/lib/domain-profile";
 
-export function UnderstandingMap({ graph, decisionLog, compact = false }: { graph: ClaimGraph; decisionLog: DecisionLogEntry[]; compact?: boolean }) {
+export function UnderstandingMap({ graph, decisionLog, compact = false, profileId = "essay" }: { graph: ClaimGraph; decisionLog: DecisionLogEntry[]; compact?: boolean; profileId?: ProfileId }) {
+  const profile = getDomainProfile(profileId);
   const state = understandingMapState(graph, decisionLog);
   const positions = new Map(state.map(({ claim, index }) => [claim.id, { x: (index % 2) * 126 + 4, y: Math.floor(index / 2) * 42 + 4 }]));
   const height = Math.max(46, Math.ceil(state.length / 2) * 42 + 4);
   const claimIds = new Set(state.map(({ claim }) => claim.id));
 
   return <figure className={`understanding-map ${compact ? "compact" : ""}`}>
-    <figcaption>UNDERSTANDING MAP</figcaption>
+    <figcaption>{profile.dossier_vocab.understanding_map}</figcaption>
     <svg viewBox={`0 0 256 ${height}`} role="img" aria-label="Claim coverage from examiner decisions">
       <g className="understanding-edges">
         {graph.edges.filter((edge) => claimIds.has(edge.source) && claimIds.has(edge.target)).map((edge) => {

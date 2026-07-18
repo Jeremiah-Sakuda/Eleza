@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { z } from "zod";
 import { claimGraphSchema, type ClaimGraph } from "@/lib/claim-graph";
 import { serviceClient } from "@/lib/decision-log";
+import { profileIdSchema, type ProfileId } from "@/lib/domain-profile";
 import { judgeDailyCap } from "@/lib/judge-access";
 
 const creationResultSchema = z.object({
@@ -53,6 +54,7 @@ export async function createPublicVivaSession(args: {
   sourceText: string;
   title: string;
   submissionId?: string;
+  profileId?: ProfileId;
   durationMs?: number;
   sessionKind?: "judge" | "practice";
   judgeAccess?: boolean;
@@ -63,6 +65,7 @@ export async function createPublicVivaSession(args: {
     p_source_text: args.sourceText,
     p_title: args.title,
     p_submission_id: args.submissionId ?? null,
+    p_profile_id: profileIdSchema.parse(args.profileId ?? "essay"),
     p_duration_limit_ms: Math.min(args.durationMs ?? 120_000, 150_000),
     p_session_kind: args.sessionKind ?? "judge",
     p_global_limit: globalDailyCap(),

@@ -3,15 +3,23 @@ import path from "node:path";
 import OpenAI from "openai";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { claimGraphSchema, type ClaimGraph, validateGraphAgainstText } from "@/lib/claim-graph";
+import { claimGraphVocabularyBlock, getDomainProfile, type ProfileId } from "@/lib/domain-profile";
 import { MODELS } from "@/lib/models";
 
 const promptPath = path.join(process.cwd(), "prompts", "claim-graph.md");
 
-export async function generateClaimGraph(sourceText: string, options: { minimumClaimCount?: number } = {}): Promise<ClaimGraph> {
+export async function renderClaimGraphPrompt(sourceText: string, profileId: ProfileId = "essay") {
+  const template = await readFile(promptPath, "utf8");
+  return template
+    .replace("{{PROFILE_VOCABULARY}}", claimGraphVocabularyBlock(getDomainProfile(profileId)))
+    .replace("{{SUBMISSION_TEXT}}", sourceText);
+}
+
+export async function generateClaimGraph(sourceText: string, options: { minimumClaimCount?: number; profileId?: ProfileId } = {}): Promise<ClaimGraph> {
   const minimumClaimCount = options.minimumClaimCount ?? 6;
   if (!process.env.OPENAI_API_KEY) return generateLocalDemoGraph(sourceText);
 
-  const prompt = (await readFile(promptPath, "utf8")).replace("{{SUBMISSION_TEXT}}", sourceText);
+  const prompt = await renderClaimGraphPrompt(sourceText, options.profileId);
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const response = await openai.responses.create({

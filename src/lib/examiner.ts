@@ -4,6 +4,7 @@ import OpenAI from "openai";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { claimGraphSchema, graphNodeSchema } from "@/lib/claim-graph";
+import { getDomainProfile, profileIdSchema, type ProfileId } from "@/lib/domain-profile";
 import { examinerDecisionSchema, type ExaminerDecision } from "@/lib/examiner-schema";
 import { MODELS } from "@/lib/models";
 
@@ -14,6 +15,7 @@ export const examinerInputSchema = z.object({
   transcript_segment: z.string().min(1),
   target_claim: graphNodeSchema.refine((node) => node.type === "claim", "Target node must be a claim."),
   graph: claimGraphSchema,
+  profile_id: profileIdSchema.optional(),
 });
 
 export type ExaminerInput = z.infer<typeof examinerInputSchema>;
@@ -32,6 +34,16 @@ type GenerateArgs = {
 export type ExaminerGenerator = (args: GenerateArgs) => Promise<unknown>;
 
 const examinerPromptPath = path.join(process.cwd(), "prompts", "examiner.md");
+
+export async function renderExaminerPrompt(profileId: ProfileId = "essay") {
+  const template = await readFile(examinerPromptPath, "utf8");
+  return template.replace("{{PROBE_FRAMING}}", getDomainProfile(profileId).probe_framing);
+}
+
+export async function buildExaminerStablePrefix(graph: z.infer<typeof claimGraphSchema>, profileId: ProfileId = "essay") {
+  const prompt = await renderExaminerPrompt(profileId);
+  return `${prompt}\n\n## Claim graph JSON\n${JSON.stringify(graph)}`;
+}
 
 export function evaluateRationale(decision: ExaminerDecision, input: ExaminerInput): string[] {
   const failures: string[] = [];
@@ -81,9 +93,8 @@ export async function examineAnswer(
   options: { generate?: ExaminerGenerator; maxRetries?: number } = {},
 ): Promise<ExaminerResult> {
   const input = examinerInputSchema.parse(rawInput);
-  const prompt = await readFile(examinerPromptPath, "utf8");
-  // DECISION: graph plus system prompt is a byte-identical prefix so live-turn cache reads stay reusable.
-  const stablePrefix = `${prompt}\n\n## Claim graph JSON\n${JSON.stringify(input.graph)}`;
+  // DECISION: the rendered profile prompt plus graph is byte-identical across turns, so cache reads remain reusable within a viva.
+  const stablePrefix = await buildExaminerStablePrefix(input.graph, input.profile_id);
   const generate = options.generate ?? generateWithOpenAI;
   const maxRetries = options.maxRetries ?? 2;
   const failures: string[] = [];
