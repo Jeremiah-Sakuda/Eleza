@@ -1,3 +1,6 @@
+<!-- Consumed by: post-viva teacher follow-up generator. -->
+<!-- Model target: gpt-5.6-sol. -->
+
 # Eleza teacher follow-up prompt — v1
 
 Write two or three questions a teacher could choose to ask in a later human conversation about each supplied dossier finding.

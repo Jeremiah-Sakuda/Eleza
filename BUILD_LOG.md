@@ -842,9 +842,9 @@ Decisions and outcomes:
 - Added original 443-word photosynthesis and 413-word cooperative-expansion fixtures with exact-offset deterministic graphs. Scripted weak defenses produce exactly one `mechanism_gap` on the lab's universal sole-factor conclusion and exactly one `cannot_reconstruct` on the case schedule's implied spare-volunteer assumption; strongly defended nodes receive no findings. All 54 offline tests, TypeScript, production build, and the 33-asset client-secret scan pass.
 - Reimplemented the four-card exhibit grid, profile dossier labels/source inks, and graphite triage labels from real profile, graph, decision-log, and findings data. Deliberate mockup deviations: retained “about two minutes” instead of the mockup's “2-minute” copy; did not reproduce the illustrative mid-viva marginalia because its citation-verification wording exceeds Eleza's content-reconstruction scope and a static panel labeled live would misrepresent hardcoded content; kept the existing real fixture essay/action area, paste/practice paths, understanding map, meta-viva, explicit turn controls, disclosures, print action, and student link because they are shipped behavior omitted from the specimens; added card actions because fixture-only cards must actually start their domain flow; and rejected the prose dossier mockup's extra finding label because findings remain exactly `cannot_reconstruct`, `mechanism_gap`, or `inconsistency`. Desktop and 390px browser checks show the four-card grid without overflow and a lab card handoff with all eight graph nodes. After migrations 005 and 006 were confirmed present, commit `0b691e0` deployed to Vercel; `/api/health` reported a reachable database, the production lab handoff showed all eight graph nodes, triage rendered stored profile labels, and the 390px production landing had no horizontal overflow.
 
-## 32. Verify the live migration state
+## 32 — Verify the live migration state
 
-### Prompt
+Prompt:
 
 ```text
 Both sql commands from the prior pass have been run, verify the changes are reflected
@@ -855,3 +855,137 @@ Decisions and outcomes:
 - Verified migrations `005_judge_access.sql` and `006_domain_profiles.sql` against the configured Supabase project using read-only PostgREST queries. `submissions.profile_id`, `viva_sessions.profile_id`, `viva_sessions.rate_limit_tier`, and `dossiers.profile_id` all resolve successfully.
 - Confirmed the live `create_public_viva_session` RPC exposes `p_profile_id`, `p_rate_limit_tier`, and `p_judge_limit` alongside the existing arguments, so profile threading and the shared public/judge rate-limit contract are active.
 - Confirmed the deployed `/api/health` response reports a reachable database and `/triage` returns HTTP 200. No sessions, tokens, or rate-limit budget were consumed during verification.
+
+## 33 — Complete the final documentation pass
+
+Prompt:
+
+```text
+Final documentation pass (docs only — zero application code changes;
+the demo path stays frozen)
+
+1. README coherence rewrite (structure, not content invention)
+   The README grew feature-by-feature across eight phases. Restructure
+   it for a judge's single top-to-bottom read, preserving the existing
+   voice (plain, specific, no marketing):
+   - What Eleza is (current opening — keep)
+   - Positioning paragraph: UPDATE it — it predates the domain
+     expansion. Add the fourth differentiator: the engine is
+     domain-parameterized (profiles define node vocabulary, edge
+     semantics, and probe framing; the invariants, divergence types,
+     and gates are universal across essay, code, lab report, and case
+     analysis). Same unbranded, factual tone.
+   - What judges can test: consolidate into one section covering all
+     four domain cards, the paste-your-own essay path, voice + typed
+     modes, practice mode, the meta-viva ("Question this decision"),
+     the understanding map, dossier print, student links, /inspect,
+     /triage, and the judge access code mechanism (mechanism only,
+     never the value). Order it as a 10-minute testing path a judge
+     could literally follow.
+   - Architecture: five invariants + the profile system + what Eleza
+     deliberately does not do (verdicts, register comparison, audio
+     retention).
+   - Building with Codex: see item 2.
+   - Setup / env / sample data / testing / deployment (keep, verify
+     per items 4–5).
+
+2. Building with Codex — harvest entries 26–32
+   The narrative currently ends around entry 25. Extend the commit
+   table and decision-receipt table through the latest commit, and add
+   the new material: the rationale-gate strengthening (from ≥2-char to
+   ≥5-word/≥25-char with paraphrase-rejection tests), the declined
+   audio-retention feature and its reasoning, and — as a short closing
+   paragraph — the two integration-discipline moments: Codex declined
+   to reproduce mockup marginalia whose wording exceeded the product's
+   content-reconstruction scope (invariants were specified to
+   supersede mockups), and declined to deploy a verified commit into
+   an environment missing its migrations. State these plainly as
+   outcomes of the working rules, not as anthropomorphized judgment.
+
+3. Fixture weak-spot documentation
+   Verify the README's domain-profiles section lists each fixture's
+   documented weak spot (essay ¶3; code name-keyed dictionary SKU
+   collision; lab sole-factor overreach; case spare-volunteer
+   assumption) so judges can reproduce each acceptance test. If any
+   fixture README is missing or thinner than the others, bring them
+   to parity.
+
+4. Command and link verification
+   Every npm command named in the README must exist in package.json
+   with the described behavior; every relative link must resolve;
+   every referenced path (prompts/, profiles/, fixtures/, design/,
+   supabase/migrations/) must match the actual tree. Fix drift in the
+   docs, never by changing code.
+
+5. Migration list currency
+   The setup section lists migrations 001–004; six exist. Update the
+   ordered list through 006 and confirm the described apply-in-order
+   instruction still holds.
+
+6. BUILD_LOG normalization
+   Entry 32 uses a different heading format ("## 32." with a
+   "### Prompt" subheading) than entries 01–31. Normalize it to the
+   established format. Fix any other formatting drift. Content is
+   append-only — never alter the substance of past entries.
+
+7. PRD honesty note
+   docs/eleza-prd.md is the original pre-build spec and the shipped
+   product now exceeds it (four domains, meta-viva, understanding
+   map, paste flow, judge code). Add a short italic header note to
+   the PRD: original planning document, preserved as authored;
+   the README documents the shipped system. Do not rewrite the PRD.
+
+8. Screenshots
+   Add three screenshots to the README, stored in docs/images/:
+   the landing hero, a mid-viva shot showing transcript + reasoning
+   pane + understanding map, and a dossier finding with its
+   "For your conversation" block. Capture from the production deploy
+   at desktop width; alt text describes content plainly. Place the
+   mid-viva shot near the top — it is the product's one-image
+   summary.
+
+9. Prompt-file headers
+   Each file in /prompts/ gets a two-line header comment: what system
+   consumes it and which model it targets. No prompt content changes.
+
+Acceptance: a fresh reader can go README-top to completed-viva
+without opening another file; every command, link, path, and
+migration reference verified against the tree; BUILD_LOG formatting
+uniform; lint/build still clean (docs-only diff confirmed); single
+commit, pushed. Append the build log entry.
+```
+
+Decisions and outcomes:
+
+- Reorganized the README around one literal judge path, then the universal architecture and domain profiles, while preserving the shipped feature descriptions and making the fourth domain-parameterization differentiator explicit.
+- Harvested commits and `// DECISION:` receipts through the four-domain production verification, documented the strengthened rationale gate, declined audio retention, and both invariant-led integration stops, and brought the essay fixture weak-spot note to parity with the other profiles.
+- Captured three desktop-width production screenshots, added metadata-only headers to every versioned prompt, normalized entry 32 without changing its substance, and verified README commands, links, paths, migrations, TypeScript, and the production build before the single documentation commit.
+
+## 34 — Relicense Eleza for noncommercial use
+
+Prompt:
+
+```text
+License change (docs/legal only — no application code changes)
+
+1. Replace the MIT LICENSE file with PolyForm Noncommercial 1.0.0
+   (full official text, unmodified), copyright 2026 Jeremiah Sakuda.
+2. Append a short NOTICE section after the license text (clearly
+   separated, not modifying the license itself): "For the OpenAI
+   Build Week hackathon: the Sponsor, Administrator, and Judges are
+   granted free access to test, evaluate, and use this project
+   through the judging period, per the hackathon's Official Rules."
+3. Update the README License section: name the license, one plain
+   sentence on what it permits (view, run, modify for noncommercial
+   use) and reserves (commercial use), and the evaluation note.
+4. Verify no other file claims MIT (package.json "license" field →
+   "SEE LICENSE IN LICENSE", README badges, headers).
+5. Single commit, pushed. Append the build log entry, recording the
+   relicensing as a deliberate ownership decision by the author.
+```
+
+Decisions and outcomes:
+
+- Replaced the project license as a deliberate ownership decision by author Jeremiah Sakuda: Eleza is now under the official, unmodified PolyForm Noncommercial 1.0.0 terms, with commercial use reserved.
+- Kept the author copyright and the exact hackathon evaluation grant in a clearly separated NOTICE after the standardized license, using a `Required Notice:` line for the copyright so downstream copies carry it under PolyForm's notice rule.
+- Updated README and npm project metadata to name the repository license accurately; retained third-party MIT entries in the lockfile only where they describe dependency licenses, and preserved historical MIT references in the append-only build log as history rather than current claims.

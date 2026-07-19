@@ -2,6 +2,12 @@
 
 All fixtures in this directory are original, synthetic examples created for Eleza's test and judge flows. They do not contain real student work or identify a real institution.
 
+## Community gardens essay
+
+`community-gardens-argument.txt` is a 537-word argumentative essay about making community gardens a permanent part of city planning.
+
+The deliberate weak spot is paragraph three, anchored by the graph node `claim_relationships`: the paragraph argues that repeated shared work builds durable neighborhood relationships. The scripted defense in `divergence/weak-viva.json` cannot reconstruct that mechanism and must produce exactly one `cannot_reconstruct` finding on the paragraph's source span; the defended paragraphs must produce none.
+
 ## Code inventory tracker
 
 `code-inventory-tracker.py` is an introductory Python assignment that loads, edits, reports, and saves inventory records.

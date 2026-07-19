@@ -1,4 +1,6 @@
 # Eleza — PRD
+*Original planning document, preserved as authored. The [README](../README.md) documents the shipped system.*
+
 **OpenAI Build Week 2026 · Education Track · Submission deadline: July 21, 5:00 PM PT**
 
 *Eleza (Swahili): to explain. The instruction at the heart of the product — explain your work.*
