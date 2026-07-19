@@ -841,3 +841,17 @@ Decisions and outcomes:
 - Added strict `lab_report` and `case_analysis` profile contracts while keeping one universal examiner, rationale gate, decision log, divergence vocabulary, understanding map, meta-viva, persistence path, and rate-limited session endpoint. Examinable node types are explicit per profile so essay and code retain their prior routing behavior while every lab and case node can be defended; the stable prompt-plus-graph prefix remains byte-identical across turns.
 - Added original 443-word photosynthesis and 413-word cooperative-expansion fixtures with exact-offset deterministic graphs. Scripted weak defenses produce exactly one `mechanism_gap` on the lab's universal sole-factor conclusion and exactly one `cannot_reconstruct` on the case schedule's implied spare-volunteer assumption; strongly defended nodes receive no findings. All 54 offline tests, TypeScript, production build, and the 33-asset client-secret scan pass.
 - Reimplemented the four-card exhibit grid, profile dossier labels/source inks, and graphite triage labels from real profile, graph, decision-log, and findings data. Deliberate mockup deviations: retained “about two minutes” instead of the mockup's “2-minute” copy; did not reproduce the illustrative mid-viva marginalia because its citation-verification wording exceeds Eleza's content-reconstruction scope and a static panel labeled live would misrepresent hardcoded content; kept the existing real fixture essay/action area, paste/practice paths, understanding map, meta-viva, explicit turn controls, disclosures, print action, and student link because they are shipped behavior omitted from the specimens; added card actions because fixture-only cards must actually start their domain flow; and rejected the prose dossier mockup's extra finding label because findings remain exactly `cannot_reconstruct`, `mechanism_gap`, or `inconsistency`. Desktop and 390px browser checks show the four-card grid without overflow and a lab card handoff with all eight graph nodes. After migrations 005 and 006 were confirmed present, commit `0b691e0` deployed to Vercel; `/api/health` reported a reachable database, the production lab handoff showed all eight graph nodes, triage rendered stored profile labels, and the 390px production landing had no horizontal overflow.
+
+## 32. Verify the live migration state
+
+### Prompt
+
+```text
+Both sql commands from the prior pass have been run, verify the changes are reflected
+```
+
+Decisions and outcomes:
+
+- Verified migrations `005_judge_access.sql` and `006_domain_profiles.sql` against the configured Supabase project using read-only PostgREST queries. `submissions.profile_id`, `viva_sessions.profile_id`, `viva_sessions.rate_limit_tier`, and `dossiers.profile_id` all resolve successfully.
+- Confirmed the live `create_public_viva_session` RPC exposes `p_profile_id`, `p_rate_limit_tier`, and `p_judge_limit` alongside the existing arguments, so profile threading and the shared public/judge rate-limit contract are active.
+- Confirmed the deployed `/api/health` response reports a reachable database and `/triage` returns HTTP 200. No sessions, tokens, or rate-limit budget were consumed during verification.
