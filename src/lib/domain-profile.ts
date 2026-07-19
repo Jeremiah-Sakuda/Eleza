@@ -99,6 +99,10 @@ export function profileSourceLabel(profileId: ProfileId) {
   return ({ essay: "ESSAY", code: "PROGRAM", lab_report: "LAB REPORT", case_analysis: "CASE ANALYSIS" } as const)[profileId];
 }
 
+export function profileDefendedSingular(profileId: ProfileId) {
+  return ({ essay: "claim", code: "decision", lab_report: "interpretation", case_analysis: "assumption" } as const)[profileId];
+}
+
 function codeClaimGraphVocabularyBlock(profile: DomainProfile) {
   const [decision, implementation, assumption] = profile.node_types;
   const [dependsOn, constrains, alternativeTo] = profile.edge_types;

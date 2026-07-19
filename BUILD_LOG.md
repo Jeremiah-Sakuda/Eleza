@@ -6,7 +6,9 @@ This is an append-only record of the primary Codex collaboration. Each entry pre
 
 Prompt:
 
-> Read AGENTS.md and docs/eleza-prd.md fully before writing any code. Confirm your understanding of the three-system architecture and the five architecture invariants in one short summary, then stop. Do not scaffold anything yet.
+```text
+Read AGENTS.md and docs/eleza-prd.md fully before writing any code. Confirm your understanding of the three-system architecture and the five architecture invariants in one short summary, then stop. Do not scaffold anything yet.
+```
 
 Decisions and outcomes:
 
@@ -18,7 +20,9 @@ Decisions and outcomes:
 
 Prompt:
 
-> Checkk the prd now
+```text
+Checkk the prd now
+```
 
 Decisions and outcomes:
 
@@ -45,7 +49,9 @@ Decisions and outcomes:
 
 Prompt:
 
-> I added a frontend file so we have a starting point, use this as a reference, this is the first page
+```text
+I added a frontend file so we have a starting point, use this as a reference, this is the first page
+```
 
 Referenced file: `/Users/jerem/Desktop/2025 Fall Projects/Eleza/Live Viva Room.dc.html`
 
@@ -58,7 +64,9 @@ Decisions and outcomes:
 
 Prompt:
 
-> continue
+```text
+continue
+```
 
 Decisions and outcomes:
 
@@ -69,7 +77,9 @@ Decisions and outcomes:
 
 Prompt:
 
-> Is the task complete?
+```text
+Is the task complete?
+```
 
 Decisions and outcomes:
 
@@ -80,7 +90,9 @@ Decisions and outcomes:
 
 Prompt:
 
-> continue with implementation
+```text
+continue with implementation
+```
 
 Decisions and outcomes:
 
@@ -107,7 +119,9 @@ Decisions and outcomes:
 
 Prompt:
 
-> Where do I need to put the API key?
+```text
+Where do I need to put the API key?
+```
 
 Decisions and outcomes:
 
@@ -140,7 +154,9 @@ Decisions and outcomes:
 
 Prompt:
 
-> Open AI API key was added, I will work on the pages myself verify that it works
+```text
+Open AI API key was added, I will work on the pages myself verify that it works
+```
 
 Decisions and outcomes:
 
@@ -167,7 +183,9 @@ Decisions and outcomes:
 
 Prompt:
 
-> All 3 keys should be present now
+```text
+All 3 keys should be present now
+```
 
 Decisions and outcomes:
 
@@ -179,7 +197,9 @@ Decisions and outcomes:
 
 Prompt:
 
-> Create a build log.md file, I want you to summarize the 2-3 key decisions made by you after every prompt, and include the prompt itself in the file . Add to it after every prompt, and start by retroactively adding all the prompts and decisions so far
+```text
+Create a build log.md file, I want you to summarize the 2-3 key decisions made by you after every prompt, and include the prompt itself in the file . Add to it after every prompt, and start by retroactively adding all the prompts and decisions so far
+```
 
 Decisions and outcomes:
 
@@ -191,7 +211,9 @@ Decisions and outcomes:
 
 Prompt:
 
-> What do I need to do by hand?
+```text
+What do I need to do by hand?
+```
 
 Decisions and outcomes:
 
@@ -203,7 +225,9 @@ Decisions and outcomes:
 
 Prompt:
 
-> I got this error Error: Failed to run sql query: ERROR: 42P01: relation "submissions" does not exist
+```text
+I got this error Error: Failed to run sql query: ERROR: 42P01: relation "submissions" does not exist
+```
 
 Decisions and outcomes:
 
@@ -215,7 +239,9 @@ Decisions and outcomes:
 
 Prompt:
 
-> Complete, I got Success. No rows returned
+```text
+Complete, I got Success. No rows returned
+```
 
 Decisions and outcomes:
 
@@ -249,7 +275,9 @@ Decisions and outcomes:
 
 Prompt:
 
-> Succeeded
+```text
+Succeeded
+```
 
 Decisions and outcomes:
 
@@ -293,7 +321,9 @@ Decisions and outcomes:
 
 Prompt:
 
-> Succeeded
+```text
+Succeeded
+```
 
 Decisions and outcomes:
 
@@ -305,7 +335,9 @@ Decisions and outcomes:
 
 Prompt:
 
-> So a few things, I got this error: The WebRTC voice connection failed. And I also think there should be a button that allows the student to end their turn, so the examiner can move on to their next question. Do we allow the examiner to ask follow ups?
+```text
+So a few things, I got this error: The WebRTC voice connection failed. And I also think there should be a button that allows the student to end their turn, so the examiner can move on to their next question. Do we allow the examiner to ask follow ups?
+```
 
 Decisions and outcomes:
 
@@ -317,7 +349,9 @@ Decisions and outcomes:
 
 Prompt:
 
-> Ensure the build log has been updated, then harvest every // DECISION: comment and the git history into a draft README section titled "Building with Codex" — organized as: what Codex built, where I overrode it and why, how GPT-5.6 is used in each of the three systems. Full README pass: setup, env vars, sample data, testing instructions for judges. Confirm npm run build clean and Vercel deploy green.
+```text
+Ensure the build log has been updated, then harvest every // DECISION: comment and the git history into a draft README section titled "Building with Codex" — organized as: what Codex built, where I overrode it and why, how GPT-5.6 is used in each of the three systems. Full README pass: setup, env vars, sample data, testing instructions for judges. Confirm npm run build clean and Vercel deploy green.
+```
 
 Decisions and outcomes:
 
@@ -471,7 +505,9 @@ Decisions and outcomes:
 
 Prompt:
 
-> continue
+```text
+continue
+```
 
 Decisions and outcomes:
 
@@ -1070,3 +1106,96 @@ Decisions and outcomes:
 - Recovered the pinned baselines from `d1aadd3` and rendered the current essay prompts through production code. Both verbatim diffs contained only two descriptive HTML-comment lines plus one blank line; the essay instructions, vocabulary, constraints, graph JSON suffix, and cached-prefix layout were unchanged, so every difference was class (a).
 - Took Step 2A with explicit user confirmation: updated only the three current hashes and the two test descriptions, added this dated append-only correction to entry 29, and corrected README wording. No prompt or application source changed, so the frozen demo was not redeployed.
 - Verified the final commit from a scratch fresh clone after `npm install`: all 54 tests passed, TypeScript lint passed, and the Next.js production build completed cleanly.
+
+## 36 — Restore prose source context and re-layout the understanding map
+
+Prompt:
+
+```text
+UI fix pass — pre-video, pre-submission (functional gap + map layout;
+no examiner, gate, schema, or prompt changes)
+
+1. Document column for ALL profiles (functional defect — highest
+   priority). The lab-report and case-analysis viva rooms render
+   transcript-only; the submitted document is invisible while the
+   student answers questions about it. Render the same document
+   column the essay profile uses: full submission text in black
+   serif, span highlighting on the currently probed node, leader
+   line from the active receipt to its span — identical behavior,
+   prose ink. Verify the dossier finding views for these profiles
+   also render document excerpts (serif) the way essay findings do.
+
+2. Understanding map re-layout (viva pane + dossier figure, all
+   profiles).
+   a. Labels never truncate mid-word: render the full node-type
+   label ("DESIGN DECISION 01", "INTERPRETATION 05"); node ids
+   below in mono may truncate ONLY with an ellipsis, or wrap.
+   Size boxes to their content.
+   b. Tier the layout by the profile's node types in document order
+   (e.g., lab: hypothesis / method choices / interpretations /
+   conclusions as rows; code: decisions row, assumptions row).
+   c. Edges route orthogonally through the gutters between tiers —
+   the same bracket-line language as /inspect — and NEVER pass
+   through a node box. If an edge cannot route cleanly at the
+   miniature size, render it only on hover/focus of either
+   endpoint rather than drawing it badly.
+   d. States unchanged (examined solid ink / being examined pulse /
+   not yet examined ghost); legend text unchanged; still pure
+   rendering from the decision log; reduced-motion respected.
+   e. The dossier's final-map figure uses the same layout at print
+   scale and must stay legible in black-and-white A4.
+
+3. Empty-state copy in the product's voice (dossier). Replace
+   schema-speak:
+   - "No submission node met the defended receipt rule." →
+     "No <profile dossier_vocab singular> was defended fully in this
+     session. The transcript below shows what was discussed."
+   - "No content-divergence receipts were found." →
+     "No findings. This records what was examined, not a judgment."
+   Wire through profile vocab (decisions / interpretations /
+   assumptions / claims). No verdict language, no apology.
+
+4. Dead space, structural only. After items 1–2, re-check each page
+   at desktop and 390px: the viva room should have no large empty
+   regions in either column; the dossier keeps its document margins
+   (whitespace there is intentional) but the map figure should not
+   float in an oversized well. Do NOT add filler content anywhere.
+
+5. BUILD_LOG prompt-formatting uniformity. Prompts in BUILD_LOG.md
+   currently alternate between fenced code blocks and blockquotes.
+   Standardize every entry's prompt to a fenced text code block
+   (```text) — code blocks preserve the prompts' own line breaks
+   and indentation, which blockquotes mangle. Formatting only:
+   the append-only rule stands, so no prompt text, decision text,
+   or entry substance changes — verify with a diff that strips
+   markdown syntax and confirm zero content delta.
+
+6. Landing hero right column (optional, last, skip if time-tight):
+   reintroduce the static annotated specimen from the mockup —
+   an essay excerpt with two green marginal notes and leader lines —
+   clearly presented as a specimen, wording strictly within
+   content-reconstruction scope (no citation-verification, no
+   verdict tone). If any note's wording can't meet that bar, skip
+   this item entirely.
+
+Acceptance:
+- A lab-report viva shows the report beside the transcript with the
+  probed span highlighted; same for case analysis; essay and code
+  unchanged.
+- No truncated-mid-word label anywhere in any map at desktop or
+  390px; no edge crosses a node box; dossier map legible printed.
+- Empty-state copy shows profile-correct vocabulary in all four
+  domains.
+- BUILD_LOG: every prompt in a ```text fence; content-diff clean.
+- 54/54 tests, lint, build, verify:client-secrets clean; deployed;
+  production spot-check: one lab viva end-to-end with the document
+  visible, one code dossier map rendered with full labels.
+- Build log entry per standing practice, noting item 1 as a
+  functional gap found in pre-video review.
+```
+
+Decisions and outcomes:
+
+- Treated the missing prose source as a functional gap found in pre-video review: only code had mounted a source panel, so one shared serif panel now serves essay, lab-report, and case-analysis with exact active-span underlines and receipt-derived leader geometry; existing non-code dossier findings continue through the shared serif receipt renderer.
+- Replaced the fixed two-column miniature with one shared, profile-tiered map for viva and dossier. Full exhibit labels and ellipsized IDs size their boxes; clean edges use orthogonal tier gutters, while routes that cannot remain clear are disclosed only on endpoint hover or focus. The three states still derive solely from `decision_log`, with reduced-motion and A4 print treatment preserved.
+- Rewrote dossier empty states through profile-specific singular vocabulary and normalized all 36 historical prompt receipts to fenced `text` blocks. The before/after extracted-prompt SHA-256 remained `5aeac70b5edbbece98b8145cd33e2f9428b11e2d282842e1d551277ee9feba55`, confirming zero prompt-content delta. The optional landing specimen was skipped to keep the pass focused on the acceptance-critical functional and layout fixes.

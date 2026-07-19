@@ -147,7 +147,12 @@ Rules compliance: no third-party trademarks, no copyrighted music, all essays sy
 - [ ] README: setup instructions, sample data, and the Codex collaboration narrative — where Codex accelerated, where human decisions were made, how GPT-5.6 was used (explicitly judged)
 - [ ] Daily habit: end each build session by logging 2–3 concrete Codex moments (what it wrote, what you overrode, why) — the README narrative is assembled from these, not reconstructed from memory on July 20
 - [ ] Repo public with license, or private + shared with testing@devpost.com and build-week-event@openai.com
-- [ ] Hosted demo live and free through **August 5** (judging period ends) — Vercel + Supabase free tiers suffice; rate-limit the Realtime endpoint
+- [ ] Hosted demo live and free through **August 12** (winners announced ~Aug 12; judging ends Aug 5) — zero-login judge flow means no credentials needed in testing instructions
+- [ ] Deployed functionality must match the video exactly — feature-freeze the demo path after submission; hotfixes only
+- [ ] **Credits gap:** free credits expire July 31 but judging runs to Aug 5 — set a hard spend cap on the OpenAI account; judge vivas capped at 2 min make Aug 1–5 cost a few dollars, budgeted deliberately
+- [ ] **Supabase keep-alive:** free tier pauses after ~7 days idle — daily cron (Vercel cron or GitHub Action) pings a health endpoint so a judge never hits a paused database
+- [ ] **Ephemeral token architecture:** browser connects to the Realtime API directly via short-lived client tokens minted by a Vercel function; audio never proxies through serverless functions, API key never reaches the client
+- [ ] Rate limiting: per-IP session cap + global daily cap on viva creation (public URL is visible to 11k participants)
 - [ ] Video < 3 min, public YouTube, audio covers Codex AND GPT-5.6 usage
 - [ ] Category: Education, with brief rationale
 - [ ] Submit before **July 21, 5:00 PM PT** — target internal deadline July 20 EOD

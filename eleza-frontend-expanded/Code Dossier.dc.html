@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Instrument+Sans:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; padding: 0; background: #FAFAF8; }
+  a { color: #1E6B4E; text-decoration-color: rgba(30,107,78,0.4); }
+  a:hover { color: #16181D; }
+  summary { cursor: pointer; }
+  summary::marker { color: #8A8F98; }
+  @page { size: A4; margin: 16mm; }
+  @media print { html, body { background: #fff; } }
+</style>
+</helmet>
+<div style="min-height:100vh; background:#FAFAF8; color:#16181D; font-family:'Instrument Sans',sans-serif;">
+  <div style="max-width:740px; margin:0 auto; padding:72px 40px 110px;">
+
+    <div style="text-align:center;">
+      <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.26em; color:#8A8F98;">ELEZA &mdash; VIVA DOSSIER</div>
+      <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.26em; color:#8A8F98; margin-top:8px;">CODE DEFENSE</div>
+      <div style="height:1px; background:rgba(138,143,152,0.4); margin:22px 0;"></div>
+      <div style="font-family:'Spectral',serif; font-size:31px; font-weight:500; line-height:1.3; text-wrap:pretty;">Assignment 4 &mdash; a most-common-words report</div>
+      <div style="font-family:'JetBrains Mono',monospace; font-size:11.5px; color:#8A8F98; margin-top:16px;">wordfreq.py &nbsp;&middot;&nbsp; Student S-0417 &nbsp;&middot;&nbsp; 18 July 2026 &nbsp;&middot;&nbsp; Viva duration 11:38</div>
+      <div style="height:1px; background:rgba(138,143,152,0.4); margin:22px 0;"></div>
+      <div style="font-family:'Spectral',serif; font-style:italic; font-size:15.5px; color:#16181D;">This dossier presents evidence. Conclusions belong to the teacher.</div>
+    </div>
+
+    <div style="margin-top:64px;">
+      <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.2em; color:#8A8F98; padding-bottom:10px; border-bottom:1px solid rgba(138,143,152,0.35);">DECISIONS DEFENDED</div>
+
+      <div style="padding:30px 0 26px; border-bottom:1px solid rgba(138,143,152,0.22);">
+        <div style="font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:0.16em; color:#1E6B4E;">DECISION 02</div>
+        <div style="font-family:'Spectral',serif; font-size:18.5px; line-height:1.55; margin-top:10px; text-wrap:pretty;">Ties in the report resolve by first appearance: a plain dict in reading order, ranked by a stable sort.</div>
+        <div style="display:grid; grid-template-columns:34px 4px minmax(0,1fr); margin:16px 0 0 26px; column-gap:12px;">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:10.5px; line-height:21px; color:rgba(138,143,152,0.75); text-align:right; white-space:pre;">25
+26
+27</div>
+          <div style="background:rgba(30,107,78,0.5);"></div>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:11.5px; line-height:21px; color:#16181D; white-space:pre; overflow-x:auto;">    counts = {}
+    for word in words:
+        if word in STOP_WORDS:</div>
+        </div>
+        <div style="margin:16px 0 0 26px;">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#1E6B4E;">06:52 &mdash; strongest defense</div>
+          <div style="font-family:'Spectral',serif; font-size:15px; line-height:1.65; color:#16181D; margin-top:6px; text-wrap:pretty;">&ldquo;Sorted is stable, so equal counts keep their original order. And Python dicts have kept insertion order since 3.7. Together that means ties resolve by first appearance, every run.&rdquo;</div>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:11px; line-height:1.6; color:#1E6B4E; margin-top:10px;">Both guarantees named and composed under questioning. Accepted at 07:14.</div>
+        </div>
+      </div>
+
+      <div style="padding:30px 0 26px;">
+        <div style="font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:0.16em; color:#1E6B4E;">ASSUMPTION 01</div>
+        <div style="font-family:'Spectral',serif; font-size:18.5px; line-height:1.55; margin-top:10px; text-wrap:pretty;">A hand-picked stop list is enough to remove words that carry no topical signal.</div>
+        <div style="margin:16px 0 0 26px;">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#1E6B4E;">04:21 &mdash; strongest defense</div>
+          <div style="font-family:'Spectral',serif; font-size:15px; line-height:1.65; color:#16181D; margin-top:6px; text-wrap:pretty;">&ldquo;If the list is wrong the counts don&rsquo;t break &mdash; the report just fills up with words like &lsquo;the&rsquo;. It degrades the ranking, not the correctness.&rdquo;</div>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:11px; line-height:1.6; color:#1E6B4E; margin-top:10px;">Failure mode stated correctly. Accepted at 04:38.</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:56px;">
+      <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.2em; color:#8A8F98; padding-bottom:10px; border-bottom:1px solid rgba(138,143,152,0.35);">FINDINGS</div>
+
+      <div style="padding:30px 0 8px;">
+        <div style="font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:0.16em; color:#B07C2A;">FINDING A &mdash; CANNOT RECONSTRUCT</div>
+        <div style="display:grid; grid-template-columns:minmax(0,1fr) 1px minmax(0,1fr); gap:0 26px; margin-top:18px;">
+          <div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.14em; color:#8A8F98;">FROM THE VIVA</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#1E6B4E; margin-top:10px;">09:47</div>
+            <div style="font-family:'Spectral',serif; font-size:14.5px; line-height:1.65; margin-top:6px; text-wrap:pretty;">&ldquo;The share is each word&rsquo;s fraction of&hellip; the counted words, I think. I&rsquo;d have to check whether the stop words are in that total.&rdquo;</div>
+          </div>
+          <div style="background:rgba(138,143,152,0.35);"></div>
+          <div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.14em; color:#8A8F98;">FROM THE PROGRAM &mdash; LINES 51&ndash;52, 68</div>
+            <div style="display:grid; grid-template-columns:26px 4px minmax(0,1fr); margin-top:10px; column-gap:10px;">
+              <div style="font-family:'JetBrains Mono',monospace; font-size:10px; line-height:20px; color:rgba(138,143,152,0.75); text-align:right; white-space:pre;">51
+52
+&hellip;
+68</div>
+              <div style="background:rgba(176,124,42,0.6);"></div>
+              <div style="font-family:'JetBrains Mono',monospace; font-size:11px; line-height:20px; color:#16181D; white-space:pre; overflow-x:auto;">    for word, count in ranked:
+        share = count / total
+&nbsp;
+    print(format_report(ranked, len(words)))</div>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:13.5px; line-height:1.6; color:#16181D; margin-top:18px;">The program divides by len(words) &mdash; all words, stop words included. The student could not say which denominator the share uses.</div>
+      </div>
+    </div>
+
+    <div style="margin-top:56px;">
+      <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.2em; color:#8A8F98; padding-bottom:10px; border-bottom:1px solid rgba(138,143,152,0.35);">APPENDIX</div>
+
+      <details style="padding:20px 0; border-bottom:1px solid rgba(138,143,152,0.22);">
+        <summary style="font-family:'JetBrains Mono',monospace; font-size:12px; color:#16181D;">Full transcript &mdash; 19 turns, 11:38</summary>
+        <div style="margin-top:18px; font-family:'JetBrains Mono',monospace; font-size:11.5px; line-height:1.9;">
+          <div style="display:grid; grid-template-columns:52px 1fr; gap:14px; padding:6px 0;"><span style="color:#8A8F98;">05:41</span><span style="color:#1E6B4E;">EXAMINER &mdash; Your count_words builds a plain dictionary in reading order. When two words tie in the final report, which comes first &mdash; and why?</span></div>
+          <div style="display:grid; grid-template-columns:52px 1fr; gap:14px; padding:6px 0;"><span style="color:#8A8F98;">06:02</span><span style="color:#16181D;">STUDENT &mdash; The one that appeared first in the text. The dictionary keeps insertion order, so it just stays in that order when I sort.</span></div>
+          <div style="display:grid; grid-template-columns:52px 1fr; gap:14px; padding:6px 0;"><span style="color:#8A8F98;">06:31</span><span style="color:#1E6B4E;">EXAMINER &mdash; That is what happens. Why is it guaranteed? What does sorted() promise about equal keys, and what does the dict promise about order?</span></div>
+          <div style="display:grid; grid-template-columns:52px 1fr; gap:14px; padding:6px 0;"><span style="color:#8A8F98;">06:52</span><span style="color:#16181D;">STUDENT &mdash; Sorted is stable, so equal counts keep their original order. And Python dicts have kept insertion order since 3.7&hellip;</span></div>
+          <div style="display:grid; grid-template-columns:52px 1fr; gap:14px; padding:6px 0;"><span style="color:#8A8F98;">09:21</span><span style="color:#1E6B4E;">EXAMINER &mdash; The report prints a share column. What exactly is each word&rsquo;s share a fraction of?</span></div>
+          <div style="display:grid; grid-template-columns:52px 1fr; gap:14px; padding:6px 0;"><span style="color:#8A8F98;">09:47</span><span style="color:#16181D;">STUDENT &mdash; The counted words, I think. I&rsquo;d have to check whether the stop words are in that total.</span></div>
+          <div style="color:#8A8F98; padding:8px 0 0;">&hellip; 13 further turns &middot; complete record retained</div>
+        </div>
+      </details>
+
+      <details style="padding:20px 0; border-bottom:1px solid rgba(138,143,152,0.22);">
+        <summary style="font-family:'JetBrains Mono',monospace; font-size:12px; color:#16181D;">Examiner decision log &mdash; 12 entries</summary>
+        <div style="margin-top:18px; font-family:'JetBrains Mono',monospace; font-size:11.5px; line-height:1.9; color:#1E6B4E;">
+          <div style="display:grid; grid-template-columns:52px 1fr; gap:14px; padding:6px 0;"><span style="color:#8A8F98;">00:02</span><span>Program parsed: 5 decisions, 2 assumptions, 8 edges. Opening at ASSUMPTION 01 &mdash; cheapest to verify.</span></div>
+          <div style="display:grid; grid-template-columns:52px 1fr; gap:14px; padding:6px 0;"><span style="color:#8A8F98;">04:38</span><span>ASSUMPTION 01 &mdash; failure mode stated correctly. Accepted. Moving to DECISION 02, the ordering guarantee.</span></div>
+          <div style="display:grid; grid-template-columns:52px 1fr; gap:14px; padding:6px 0;"><span style="color:#8A8F98;">06:12</span><span>States the dictionary preserves insertion order but cannot say why that matters here &mdash; probing DECISION 02.</span></div>
+          <div style="display:grid; grid-template-columns:52px 1fr; gap:14px; padding:6px 0;"><span style="color:#8A8F98;">07:14</span><span>Stable sort over insertion order reconstructed under questioning. DECISION 02 defended. Moving to the share denominator.</span></div>
+          <div style="display:grid; grid-template-columns:52px 1fr; gap:14px; padding:6px 0;"><span style="color:#8A8F98;">09:58</span><span>Cannot reconstruct the denominator on line 68. Logged as FINDING A. Not probing further.</span></div>
+          <div style="color:#8A8F98; padding:8px 0 0;">&hellip; 7 further entries &middot; complete record retained</div>
+        </div>
+      </details>
+    </div>
+
+    <div style="margin-top:64px; text-align:center;">
+      <div style="height:1px; background:rgba(138,143,152,0.4);"></div>
+      <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.22em; color:#8A8F98; margin-top:18px;">END OF DOSSIER &middot; ELEZA &middot; EVIDENCE ONLY</div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

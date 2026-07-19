@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;1,400&family=Instrument+Sans:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; padding: 0; background: #FAFAF8; }
+  a { color: #1E6B4E; text-decoration-color: rgba(30,107,78,0.4); }
+  a:hover { color: #16181D; }
+</style>
+</helmet>
+<div style="min-height:100vh; background:#FAFAF8; color:#16181D; font-family:'Instrument Sans',sans-serif;">
+  <div style="max-width:860px; margin:0 auto; padding:64px 40px 100px;">
+    <div style="display:flex; align-items:baseline; gap:20px;">
+      <div style="font-size:12px; letter-spacing:0.24em;">ELEZA</div>
+      <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.18em; color:#8A8F98;">COMPLETED VIVAS &mdash; PERIOD 3, ESSAY 2</div>
+    </div>
+    <div style="font-family:'Spectral',serif; font-size:16.5px; font-style:italic; margin-top:26px;">Start with the dossiers that have findings. The evidence is inside.</div>
+
+    <div style="margin-top:28px; border-top:1px solid rgba(138,143,152,0.4);">
+      <div style="display:grid; grid-template-columns:88px minmax(0,1fr) 92px 110px 110px; gap:18px; padding:12px 0; border-bottom:1px solid rgba(138,143,152,0.35); font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.16em; color:#8A8F98;">
+        <div>STUDENT</div>
+        <div>ESSAY</div>
+        <div>DURATION</div>
+        <button onClick="{{ toggleSort }}" style="all:unset; cursor:pointer; font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:0.16em; color:#16181D;" style-hover="color:#1E6B4E;">FINDINGS {{ sortArrow }}</button>
+        <div></div>
+      </div>
+      <sc-for list="{{ rows }}" as="r" hint-placeholder-count="6">
+        <div style="display:grid; grid-template-columns:88px minmax(0,1fr) 92px 110px 110px; gap:18px; padding:16px 0; border-bottom:1px solid rgba(138,143,152,0.2); align-items:baseline;">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:12px; color:#8A8F98;">{{ r.id }}</div>
+          <div style="font-family:'Spectral',serif; font-size:15.5px; color:#16181D; text-wrap:pretty;">{{ r.title }}</div>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:12px; color:#8A8F98;">{{ r.duration }}</div>
+          <div>
+            <sc-if value="{{ r.hasFindings }}" hint-placeholder-val="{{ false }}">
+              <span style="font-family:'JetBrains Mono',monospace; font-size:12px; color:#B07C2A;">{{ r.findingsLabel }}</span>
+            </sc-if>
+            <sc-if value="{{ r.noFindings }}" hint-placeholder-val="{{ true }}">
+              <span style="font-family:'JetBrains Mono',monospace; font-size:12px; color:#8A8F98;">&mdash;</span>
+            </sc-if>
+          </div>
+          <div><a href="#" style="font-size:13px;">Read dossier</a></div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.14em; color:#8A8F98; margin-top:16px;">8 VIVAS &middot; 3 WITH FINDINGS</div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { sortDesc: true };
+  data = [
+    { id: 'S-0417', title: 'Movable type and the standardization of vernacular English', duration: '12:51', findings: 2 },
+    { id: 'S-0409', title: 'The Hanseatic League as a proto-network state', duration: '11:02', findings: 0 },
+    { id: 'S-0421', title: 'Antibiotic resistance and the economics of drug discovery', duration: '14:26', findings: 3 },
+    { id: 'S-0403', title: 'Reading the Bayeux Tapestry as political propaganda', duration: '09:48', findings: 0 },
+    { id: 'S-0432', title: 'Why the Green Revolution bypassed sub-Saharan Africa', duration: '13:15', findings: 1 },
+    { id: 'S-0411', title: 'The invention of childhood in Victorian England', duration: '10:37', findings: 0 },
+    { id: 'S-0426', title: 'Coral bleaching and the limits of local reef management', duration: '12:04', findings: 0 },
+    { id: 'S-0414', title: 'Fermat, Wiles, and the sociology of a 358-year proof', duration: '11:49', findings: 0 }
+  ];
+  renderVals() {
+    const dir = this.state.sortDesc ? -1 : 1;
+    const rows = [...this.data].sort((a, b) => dir * (a.findings - b.findings) || a.id.localeCompare(b.id)).map(r => ({
+      ...r,
+      hasFindings: r.findings > 0,
+      noFindings: r.findings === 0,
+      findingsLabel: r.findings + (r.findings === 1 ? ' finding' : ' findings')
+    }));
+    return {
+      rows,
+      sortArrow: this.state.sortDesc ? '\u2193' : '\u2191',
+      toggleSort: () => this.setState(s => ({ sortDesc: !s.sortDesc }))
+    };
+  }
+}
+</script>
+</body>
+</html>

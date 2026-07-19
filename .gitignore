@@ -4,3 +4,7 @@ node_modules
 .vercel
 .env*
 !.env.example
+.DS_Store
+eleza-frontend-expanded/CLAUDE.md
+eleza-frontend-expanded/support.js
+eleza-frontend-expanded/.thumbnail

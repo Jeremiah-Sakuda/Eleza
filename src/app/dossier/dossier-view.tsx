@@ -4,7 +4,7 @@ import { PrintDossierButton } from "@/app/dossier/print-dossier-button";
 import { StudentDossierLink } from "@/app/dossier/student-dossier-link";
 import { MetaVivaExchange } from "@/app/meta-viva-exchange";
 import { UnderstandingMap } from "@/app/understanding-map";
-import { getDomainProfile, profileDefenseLabel, profileSourceLabel } from "@/lib/domain-profile";
+import { getDomainProfile, profileDefendedSingular, profileDefenseLabel, profileSourceLabel } from "@/lib/domain-profile";
 import { isPrimaryNode } from "@/lib/claim-graph";
 
 export function DossierView({ dossier, studentPath }: { dossier: Dossier; studentPath?: string }) {
@@ -31,7 +31,7 @@ export function DossierView({ dossier, studentPath }: { dossier: Dossier; studen
     <UnderstandingMap graph={dossier.graph} decisionLog={dossier.decisionLog} profileId={dossier.profileId} />
 
     <DossierSection title={profile.dossier_vocab.claims_defended}>
-      {dossier.analysis.claims_defended.length === 0 && <p className="dossier-empty">No {profile.artifact_noun} node met the defended receipt rule.</p>}
+      {dossier.analysis.claims_defended.length === 0 && <p className="dossier-empty">No {profileDefendedSingular(dossier.profileId)} was defended fully in this session. The transcript below shows what was discussed.</p>}
       {dossier.analysis.claims_defended.map((defended, index) => {
         const claim = claimNodes.get(defended.claim_id);
         return <article className="defended-claim" key={defended.claim_id}>
@@ -48,7 +48,7 @@ export function DossierView({ dossier, studentPath }: { dossier: Dossier; studen
     </DossierSection>
 
     <DossierSection title="FINDINGS">
-      {dossier.analysis.findings.length === 0 && <p className="dossier-empty">No content-divergence receipts were found.</p>}
+      {dossier.analysis.findings.length === 0 && <p className="dossier-empty">No findings. This records what was examined, not a judgment.</p>}
       {dossier.analysis.findings.map((finding, index) => {
         const claim = claimNodes.get(finding.claim_id);
         const sequence = transcriptSequence.get(`${finding.claim_id}:${finding.timestamp}`);

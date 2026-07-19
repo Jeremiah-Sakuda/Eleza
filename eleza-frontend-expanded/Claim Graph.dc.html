@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=Instrument+Sans:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; padding: 0; background: #FAFAF8; }
+  a { color: #1E6B4E; text-decoration-color: rgba(30,107,78,0.4); }
+  a:hover { color: #16181D; }
+</style>
+</helmet>
+<div style="min-height:100vh; background:#FAFAF8; color:#16181D; font-family:'Instrument Sans',sans-serif;">
+  <div style="border-bottom:1px solid rgba(138,143,152,0.35);">
+    <div style="max-width:1160px; margin:0 auto; padding:16px 40px; display:flex; align-items:center; gap:22px;">
+      <div style="font-size:12px; letter-spacing:0.24em;">ELEZA</div>
+      <div style="width:1px; height:13px; background:rgba(138,143,152,0.4);"></div>
+      <div style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#8A8F98;">Submission parsed &middot; 6 nodes &middot; 5 edges</div>
+      <div style="margin-left:auto; display:flex; align-items:center; gap:22px;">
+        <a href="#" style="font-size:13px; color:#8A8F98; text-decoration-color:rgba(138,143,152,0.4);">Looks wrong? Edit the graph</a>
+        <button style="font-family:'Instrument Sans',sans-serif; font-size:13px; color:#FAFAF8; background:#16181D; border:none; border-radius:2px; padding:8px 18px; cursor:pointer;" style-hover="background:#1E6B4E;">Proceed to viva setup</button>
+      </div>
+    </div>
+  </div>
+
+  <div ref="{{ mainRef }}" style="position:relative; max-width:1160px; margin:0 auto; padding:48px 40px 120px; display:grid; grid-template-columns:236px minmax(0,1fr); gap:64px; align-items:start;">
+    <svg style="position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible;">
+      <sc-for list="{{ brackets }}" as="b" hint-placeholder-count="0">
+        <path d="{{ b.d }}" style="fill:none; stroke:{{ b.stroke }}; stroke-width:1;"></path>
+      </sc-for>
+      <sc-for list="{{ leaders }}" as="l" hint-placeholder-count="0">
+        <path d="{{ l.d }}" style="fill:none; stroke:#1E6B4E; stroke-opacity:0.5; stroke-width:1;"></path>
+      </sc-for>
+    </svg>
+
+    <div style="padding-left:34px;">
+      <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.16em; color:#8A8F98; padding-bottom:10px; border-bottom:1px solid rgba(138,143,152,0.28); margin-bottom:8px;">STRUCTURAL INDEX</div>
+      <sc-for list="{{ nodes }}" as="n" hint-placeholder-count="6">
+        <div ref="{{ n.labelRef }}" onClick="{{ n.pick }}" style="display:flex; align-items:baseline; gap:10px; padding:11px 0; cursor:pointer; border-bottom:1px solid rgba(138,143,152,0.14);">
+          <span style="font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.14em; color:{{ n.labelColor }}; transition:color 0.2s;">{{ n.label }}</span>
+          <span style="font-family:'JetBrains Mono',monospace; font-size:10px; color:#8A8F98;">{{ n.type }}</span>
+        </div>
+      </sc-for>
+      <div style="font-size:12px; color:#8A8F98; margin-top:16px; line-height:1.55;">Select a claim to see its span in the essay and what it rests on.</div>
+    </div>
+
+    <div style="max-width:620px;">
+      <div style="font-family:'Spectral',serif; font-size:26px; font-weight:500; line-height:1.35; text-wrap:pretty;">Movable type and the standardization of vernacular English</div>
+      <div style="font-family:'JetBrains Mono',monospace; font-size:11px; color:#8A8F98; margin-top:10px;">Student S-0417 &middot; 2,340 words &middot; parsed 14 July 2026</div>
+      <div style="font-family:'Spectral',serif; font-size:16.5px; line-height:1.75; margin-top:30px; text-wrap:pretty;">
+        <p style="margin:0 0 20px;">English spelling did not settle because anyone decided that it should. <span ref="{{ refs.n1 }}" onClick="{{ pick.n1 }}" style="cursor:pointer; border-bottom:1.5px solid {{ u.n1 }}; transition:border-color 0.2s;">It settled because print shops made variation expensive</span>: compositors were paid by the page, resetting type cost money, and a house style was cheaper than a standing argument at the composing stone.</p>
+        <p style="margin:0 0 20px;"><span ref="{{ refs.n2 }}" onClick="{{ pick.n2 }}" style="cursor:pointer; border-bottom:1.5px solid {{ u.n2 }}; transition:border-color 0.2s;">A century before any academy existed, the shops were already acting as de facto orthographic authorities.</span> If Wynkyn de Worde&rsquo;s house printed <em>booke</em> one way for twenty years, that quietly became how the word was spelled; there was no institution to appeal to.</p>
+        <p style="margin:0 0 20px;">The harder case is Caxton. <span ref="{{ refs.n3 }}" onClick="{{ pick.n3 }}" style="cursor:pointer; border-bottom:1.5px solid {{ u.n3 }}; transition:border-color 0.2s;">His Chancery spellings spread because of print, not because of the court&rsquo;s prestige.</span> The prestige account predicts official documents leading the change; instead, <span ref="{{ refs.n4 }}" onClick="{{ pick.n4 }}" style="cursor:pointer; border-bottom:1.5px solid {{ u.n4 }}; transition:border-color 0.2s;">private correspondence shows the printed forms within a generation</span> <span ref="{{ refs.n5 }}" onClick="{{ pick.n5 }}" style="cursor:pointer; border-bottom:1.5px solid {{ u.n5 }}; transition:border-color 0.2s;">(Fisher, ch. 2)</span>, well before official usage converged.</p>
+        <p style="margin:0;">The convergence itself is measurable. <span ref="{{ refs.n6 }}" onClick="{{ pick.n6 }}" style="cursor:pointer; border-bottom:1.5px solid {{ u.n6 }}; transition:border-color 0.2s;">Analysis of ligature frequencies across fourteen London print shops shows orthographic convergence by 1523</span> &mdash; decades before any schoolmaster codified a rule.</p>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { selected: null, brackets: [], leaders: [] };
+  constructor(props) {
+    super(props);
+    this.mainRef = React.createRef();
+    this._refs = {};
+    this.nodesData = [
+      { id: 'n1', label: 'CLAIM 01', type: 'claim' },
+      { id: 'n2', label: 'CLAIM 02', type: 'claim' },
+      { id: 'n3', label: 'CLAIM 03', type: 'claim' },
+      { id: 'n4', label: 'EVID 04', type: 'evidence' },
+      { id: 'n5', label: 'CIT 05', type: 'citation' },
+      { id: 'n6', label: 'EVID 06', type: 'evidence' }
+    ];
+    this.edges = [
+      { from: 'n2', to: 'n1' },
+      { from: 'n3', to: 'n1' },
+      { from: 'n4', to: 'n3' },
+      { from: 'n5', to: 'n4' },
+      { from: 'n6', to: 'n2' }
+    ];
+  }
+  getRef(k) { if (!this._refs[k]) this._refs[k] = React.createRef(); return this._refs[k]; }
+  related(id) {
+    const set = new Set();
+    this.edges.forEach(e => { if (e.from === id) set.add(e.to); if (e.to === id) set.add(e.from); });
+    return set;
+  }
+  measure = () => {
+    const main = this.mainRef.current;
+    if (!main) return;
+    const mR = main.getBoundingClientRect();
+    const mid = k => {
+      const el = this._refs[k] && this._refs[k].current;
+      if (!el) return null;
+      const rects = el.getClientRects();
+      const r = rects.length ? rects[0] : el.getBoundingClientRect();
+      return { left: r.left - mR.left, right: r.right - mR.left, y: r.top - mR.top + r.height / 2 };
+    };
+    const sel = this.state.selected, rel = sel ? this.related(sel) : new Set();
+    const brackets = [];
+    this.edges.forEach((e, i) => {
+      const a = mid('l' + e.from), b = mid('l' + e.to);
+      if (!a || !b) return;
+      const x = Math.min(a.left, b.left) - 12 - i * 7;
+      const active = sel && (e.from === sel || e.to === sel);
+      brackets.push({
+        d: 'M ' + a.left + ' ' + a.y + ' L ' + x + ' ' + a.y + ' L ' + x + ' ' + b.y + ' L ' + b.left + ' ' + b.y,
+        stroke: active ? 'rgba(30,107,78,0.65)' : 'rgba(138,143,152,0.4)'
+      });
+    });
+    const leaders = [];
+    if (sel) {
+      const l = mid('l' + sel), s = mid('s' + sel);
+      if (l && s) {
+        const midX = (l.right + s.left) / 2;
+        leaders.push({ d: 'M ' + (l.right + 8) + ' ' + l.y + ' L ' + midX + ' ' + l.y + ' L ' + (s.left - 6) + ' ' + s.y });
+      }
+    }
+    const prev = JSON.stringify([this.state.brackets, this.state.leaders]);
+    const next = JSON.stringify([brackets, leaders]);
+    if (prev !== next) this.setState({ brackets, leaders });
+  };
+  componentDidMount() {
+    this.measure();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.measure());
+    this._onResize = () => this.measure();
+    window.addEventListener('resize', this._onResize);
+  }
+  componentWillUnmount() { window.removeEventListener('resize', this._onResize); }
+  componentDidUpdate(p, s) { if (s.selected !== this.state.selected) requestAnimationFrame(() => this.measure()); }
+  renderVals() {
+    const sel = this.state.selected, rel = sel ? this.related(sel) : new Set();
+    const pick = {}, u = {}, refs = {};
+    const nodes = this.nodesData.map(n => {
+      const isSel = sel === n.id, isRel = rel.has(n.id);
+      pick[n.id] = () => this.setState(st => ({ selected: st.selected === n.id ? null : n.id }));
+      u[n.id] = isSel ? '#1E6B4E' : isRel ? 'rgba(30,107,78,0.35)' : 'transparent';
+      refs[n.id] = this.getRef('s' + n.id);
+      return {
+        ...n,
+        labelRef: this.getRef('l' + n.id),
+        pick: pick[n.id],
+        labelColor: isSel ? '#1E6B4E' : isRel ? 'rgba(30,107,78,0.7)' : '#16181D'
+      };
+    });
+    return { mainRef: this.mainRef, nodes, pick, u, refs, brackets: this.state.brackets, leaders: this.state.leaders };
+  }
+}
+</script>
+</body>
+</html>

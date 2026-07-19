@@ -17,6 +17,7 @@ import {
 import { MetaVivaExchange } from "@/app/meta-viva-exchange";
 import { UnderstandingMap } from "@/app/understanding-map";
 import { CodeSourcePanel } from "@/app/viva/code-source-panel";
+import { ProseSourcePanel } from "@/app/viva/prose-source-panel";
 import { isPrimaryNode } from "@/lib/claim-graph";
 
 type SessionStatus = "loading" | "idle" | "connecting" | "live" | "ending" | "complete" | "error";
@@ -526,8 +527,9 @@ export default function VivaPage() {
     <div className="viva-disclosure">You’re interacting with an AI examiner. {handoff.practice ? "This warm-up is not recorded or saved." : "Your transcript and examiner decisions are recorded and shown in your dossier."}</div>
 
     <main className="viva-main viva-reasoning-layout">
-      <section className="transcript-column">
+      <section className="transcript-column has-source">
         {isCode && <CodeSourcePanel sourceText={handoff.sourceText} graph={handoff.graph} activeTargetId={activeTargetId} decisionLog={decisionLog} />}
+        {!isCode && <ProseSourcePanel sourceText={handoff.sourceText} graph={handoff.graph} activeTargetId={activeTargetId} decisionLog={decisionLog} profileId={profileId === "code" ? "essay" : profileId} />}
         <p className="column-label">TRANSCRIPT</p>
         {turns.length === 0 && <div className="viva-ready-copy"><h1>{handoff.practice ? "Warm up first." : `Defend ${defenseNoun}.`}</h1><p>The AI examiner asks only questions tied to this {graphDescription}. {isTextMode ? "Type each answer and send it when complete." : "Answer out loud, then press Finish answer when you are done."} The session lasts {durationLabel}.</p>{!handoff.practice && <p className="viva-clamp-note">Real vivas are teacher-configurable at 5–8 minutes. This hosted demo is capped at about two minutes as a public-cost control.</p>}{handoff.sourceKind === "paste" && <p className="viva-data-note">Your text and transcript are stored to generate your dossier.</p>}<p className="viva-start-disclosure">AI INTERACTION · {handoff.practice ? "UNRECORDED PRACTICE" : "TRANSCRIPT AND ROUTING RECEIPTS RECORDED"}</p><button onClick={startLiveSession} disabled={status === "connecting"}>{status === "connecting" ? "Connecting…" : `Start ${handoff.practice ? "warm-up" : "viva"} — ${durationLabel}`}</button></div>}
         {turns.map((turn) => <article className={`transcript-turn ${turn.speaker}`} key={turn.id}>
