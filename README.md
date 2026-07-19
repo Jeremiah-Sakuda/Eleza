@@ -77,7 +77,7 @@ This repository was built in one primary Codex collaboration. The append-only [b
 | Voice hardening | Minimum-lifetime client tokens, explicit answer commits, Safari-safe playback, and peer/ICE diagnostics | `347870e`, `340857a` |
 | Participant controls | Paste-your-own essay, honest graph-control surface, A4 dossier printing, and signed student links | `f425e1e`, `01c40b3` |
 | Feature freeze | Stronger rationale receipts, judge tier, meta-viva, understanding map, teacher follow-ups, and audio-retention boundary | `d1aadd3` |
-| Domain profiles | Behavior-preserving essay extraction, code defense, lab and case profiles, four-card landing, and profile-aware dossiers | `2c5cfd3`, `7019843`, `0b691e0` |
+| Domain profiles | Essay profile extraction, code defense, lab and case profiles, four-card landing, and profile-aware dossiers; current essay prompt bytes are pinned after a non-semantic metadata-header diff | `2c5cfd3`, `7019843`, `0b691e0` |
 | Production receipts | Four-domain deployment and live migration verification | `59e26ca`, `4202970` |
 
 The chronological commit receipt through the latest verified production state is:
@@ -104,7 +104,7 @@ The chronological commit receipt through the latest verified production state is
 | `f425e1e` | Added pasted defenses, dossier printing, and student links |
 | `01c40b3` | Recorded participant-flow production acceptance |
 | `d1aadd3` | Completed the final feature-freeze implementation |
-| `2c5cfd3` | Extracted the essay domain profile without changing behavior |
+| `2c5cfd3` | Extracted the essay domain profile; later metadata-only template headers were diffed as non-semantic and pinned at their current bytes |
 | `7019843` | Added the code defense profile |
 | `0b691e0` | Added lab-report and case-analysis profiles |
 | `59e26ca` | Recorded four-domain production verification |

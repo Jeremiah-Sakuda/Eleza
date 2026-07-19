@@ -656,6 +656,8 @@ Decisions and outcomes:
 - Rendered both parameterized prompts byte-for-byte against their pre-refactor baselines: claim graph stayed 4,885 bytes and examiner stayed 1,763 bytes, with unchanged SHA-256 receipts. A two-turn examiner test proves the stable cache prefix is identical while fresh answer suffixes differ.
 - Added migration `006_domain_profiles.sql` and threaded `profile_id` through submissions, rate-limited viva creation, examiner turns, dossiers, and triage records. All pre-existing tests remained untouched and passing; the new profile contract tests, TypeScript check, and production build also pass.
 
+**Correction — 2026-07-18:** The profile expansion preserved the essay instruction, vocabulary, constraints, and cached-prefix layout. A later documentation pass added three metadata-only header lines to each shared prompt template, changing the pinned bytes without changing model instructions. A verbatim diff classified every changed line as non-semantic; the tests now enforce stability at the current rendered hashes and byte-identical cached prefixes across turns rather than claiming identity with the pre-expansion snapshot.
+
 ## 30 — Add the code defense profile
 
 Prompt:
@@ -989,3 +991,82 @@ Decisions and outcomes:
 - Replaced the project license as a deliberate ownership decision by author Jeremiah Sakuda: Eleza is now under the official, unmodified PolyForm Noncommercial 1.0.0 terms, with commercial use reserved.
 - Kept the author copyright and the exact hackathon evaluation grant in a clearly separated NOTICE after the standardized license, using a `Required Notice:` line for the copyright so downstream copies carry it under PolyForm's notice rule.
 - Updated README and npm project metadata to name the repository license accurately; retained third-party MIT entries in the lockfile only where they describe dependency licenses, and preserved historical MIT references in the append-only build log as history rather than current claims.
+
+## 35 — Resolve the current prompt-byte pins through Step 2A
+
+Prompt:
+
+```text
+Hotfix — fresh-clone test failures contradict a README claim
+(docs + tests + at most the shared prompt template; demo path stays
+frozen; nothing else changes)
+
+Context: on a fresh clone, 52/54 tests pass. The two failures are in
+tests/domain-profile.test.ts — "essay profile preserves the
+pre-refactor rendered prompts byte for byte" and "examiner cached
+prefix stays byte-identical across turns." These are hash-pinned
+snapshot tests from the essay-extraction refactor; later code/lab/case
+commits changed the essay's rendered prompt bytes without updating the
+pins. The README invites judges to run npm test, and the build log
+claims the extraction was behavior-preserving. Red tests contradicting
+a documented claim is unacceptable in this repo.
+
+Step 1 — Establish ground truth BEFORE changing anything.
+Render the current essay-profile claim-graph prompt and examiner
+prompt. Diff each against the pinned pre-refactor baselines (recover
+them from git history at the refactor commit if not stored). Show me
+both diffs verbatim and classify every changed line as one of:
+(a) wording/formatting with no semantic effect on model behavior,
+(b) semantic change to instructions, vocabulary, or constraints,
+(c) structural change to the cached-prefix layout.
+STOP after presenting the classification. Do not modify hashes, tests,
+prompts, or docs until I reply.
+
+Step 2A — If I confirm all changes are class (a):
+- Update the pinned hashes to the current rendered bytes.
+- Rewrite the two test descriptions to state what they now guarantee:
+  the essay prompt is stable at the CURRENT pinned bytes and the
+  cached prefix is byte-identical across turns — not that it is
+  unchanged from before the domain expansion.
+- Correct the build-log entry 29 table language and any README
+  sentence claiming "behavior-preserving" or "byte-equivalent to
+  pre-refactor": state plainly that the domain expansion introduced
+  wording-level prompt changes to the shared template, verified
+  non-semantic by diff, and that stability is enforced at the current
+  pins. Do not alter the historical prompt text inside past build-log
+  entries — append a dated correction note to entry 29 instead,
+  consistent with the log's append-only rule.
+
+Step 2B — If any change is class (b) or (c):
+- Do NOT update hashes. Restore the essay profile's rendered output
+  to the pre-refactor bytes by fixing the shared template or the
+  essay profile block, without altering the code/lab/case rendered
+  prompts (add per-profile overrides if the shared template cannot
+  serve both; show me the four rendered prompts after the fix).
+- Re-run the deterministic essay viva and confirm the dossier output
+  is consistent with the pre-expansion acceptance record before
+  telling me it is resolved.
+
+Step 3 — Either branch:
+- Fresh-clone verification: rm -rf a scratch clone, npm install,
+  npm test, npm run lint, npm run build — 54/54, all clean. State the
+  count explicitly.
+- If Step 2B touched a prompt template, redeploy and run one
+  production essay viva plus one production code viva to confirm no
+  behavior change reached the demo; if Step 2A only, no redeploy.
+- Single commit with a message naming the resolution branch taken.
+  Append the build log entry: what the diff showed, which branch, and
+  why. Push.
+```
+
+Follow-up confirmation:
+
+```text
+Step 2A confirmed
+```
+
+Decisions and outcomes:
+
+- Recovered the pinned baselines from `d1aadd3` and rendered the current essay prompts through production code. Both verbatim diffs contained only two descriptive HTML-comment lines plus one blank line; the essay instructions, vocabulary, constraints, graph JSON suffix, and cached-prefix layout were unchanged, so every difference was class (a).
+- Took Step 2A with explicit user confirmation: updated only the three current hashes and the two test descriptions, added this dated append-only correction to entry 29, and corrected README wording. No prompt or application source changed, so the frozen demo was not redeployed.
+- Verified the final commit from a scratch fresh clone after `npm install`: all 54 tests passed, TypeScript lint passed, and the Next.js production build completed cleanly.
