@@ -2,6 +2,7 @@ export const essayProfile = {
   id: "essay",
   artifact_noun: "submission",
   node_types: ["claim", "evidence", "citation"],
+  examinable_node_types: ["claim"],
   edge_types: ["supports", "rebuts", "depends_on"],
   probe_framing: [
     "- `strong`: the answer reconstructs the claim's mechanism or evidence accurately.",

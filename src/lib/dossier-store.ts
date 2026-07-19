@@ -1,6 +1,6 @@
 // DECISION: do not retain viva audio; timestamped transcripts preserve evidentiary receipts without surveillance-weight biometric residue.
 import { z } from "zod";
-import { claimGraphSchema, type ClaimGraph } from "@/lib/claim-graph";
+import { claimGraphSchema, validateGraphAgainstText, type ClaimGraph } from "@/lib/claim-graph";
 import { decisionLogEntrySchema, serviceClient, type DecisionLogEntry } from "@/lib/decision-log";
 import { analyzeDivergence, transcriptTurnSchema, type TranscriptTurnInput } from "@/lib/divergence";
 import { divergenceAnalysisSchema, type DivergenceAnalysis } from "@/lib/divergence-schema";
@@ -88,9 +88,9 @@ export async function generateAndPersistDossier(sessionId: string) {
   if (transcriptResult.error) throw new Error(`Could not load viva transcript: ${transcriptResult.error.message}`);
   if (logResult.error) throw new Error(`Could not load decision log: ${logResult.error.message}`);
 
-  const sourceText = z.string().min(1).parse(sessionResult.data.source_text);
-  const graph = claimGraphSchema.parse(sessionResult.data.graph);
   const profileId = profileIdSchema.parse(sessionResult.data.profile_id);
+  const sourceText = z.string().min(1).parse(sessionResult.data.source_text);
+  const graph = validateGraphAgainstText(claimGraphSchema.parse(sessionResult.data.graph), sourceText, profileId);
   const transcriptRows = z.array(persistedTurnSchema).parse(transcriptResult.data);
   const transcript = transcriptRows.map((turn) => transcriptTurnSchema.parse({
     id: turn.id,
@@ -136,19 +136,21 @@ export async function loadDossier(id: string): Promise<Dossier> {
   if (transcriptResult.error) throw new Error(`Could not load dossier transcript: ${transcriptResult.error.message}`);
   if (logResult.error) throw new Error(`Could not load dossier decision log: ${logResult.error.message}`);
   const transcript = z.array(persistedTurnSchema).parse(transcriptResult.data);
+  const sourceText = z.string().min(1).parse(sessionResult.data.source_text);
+  const profileId = profileIdSchema.parse(dossierResult.data.profile_id);
   return {
     id: z.string().uuid().parse(dossierResult.data.id),
     sessionId,
     title: z.string().nullable().parse(sessionResult.data.title) ?? "Argumentative submission",
-    sourceText: z.string().min(1).parse(sessionResult.data.source_text),
-    graph: claimGraphSchema.parse(sessionResult.data.graph),
+    sourceText,
+    graph: validateGraphAgainstText(claimGraphSchema.parse(sessionResult.data.graph), sourceText, profileId),
     transcript,
     decisionLog: z.array(decisionLogEntrySchema).parse(logResult.data),
     analysis: divergenceAnalysisSchema.parse(dossierResult.data.analysis),
     createdAt: z.string().parse(dossierResult.data.created_at),
     completedAt: z.string().nullable().parse(sessionResult.data.completed_at),
     durationMs: transcript.reduce((maximum, turn) => Math.max(maximum, turn.elapsed_ms), 0),
-    profileId: profileIdSchema.parse(dossierResult.data.profile_id),
+    profileId,
   };
 }
 

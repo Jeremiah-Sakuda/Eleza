@@ -1,6 +1,6 @@
 # Eleza
 
-An essay can't tell you what a student understands. A conversation can. Eleza is a transparent oral-defense tool for submitted work: it parses an essay or program into exact source spans, conducts an examiner-routed viva, and returns a dossier of transcript-to-document receipts. It does not produce authenticity scores, pass/fail labels, or verdicts.
+A submission can't tell you what a student understands. A conversation can. Eleza is a transparent oral-defense tool for submitted work: it parses an essay, program, lab report, or case analysis into exact source spans, conducts an examiner-routed viva, and returns a dossier of transcript-to-document receipts. It does not produce authenticity scores, pass/fail labels, or verdicts.
 
 Eleza improves on existing oral-assessment concepts rather than claiming to create the category. Research deployments and commercial tools already generate viva questions from student submissions, but their evaluation is generally hidden and returned as grades or flags. Eleza instead targets a structured claim graph of the specific document and renders the examiner's routing rationale live during the viva. Its dossier returns span-linked evidence for a teacher to adjudicate instead of a verdict.
 
@@ -8,7 +8,7 @@ Eleza improves on existing oral-assessment concepts rather than claiming to crea
 
 ## What judges can test
 
-The zero-login demo starts with synthetic essay and Python fixtures and supports five paths:
+The zero-login demo presents four domain cards backed by synthetic fixtures, plus paste-your-own essay and unrecorded practice paths:
 
 Real vivas are teacher-configurable at 5–8 minutes; the hosted demo is capped at about two minutes as a public-cost control, not as an assessment-design limit.
 
@@ -16,21 +16,34 @@ Real vivas are teacher-configurable at 5–8 minutes; the hosted demo is capped 
 2. **Text accessibility mode:** select **Use typed answers instead**. Typed responses pass through the same examiner, decision log, divergence analysis, and dossier path as voice responses.
 3. **Unrecorded practice:** select **Try an unrecorded warm-up** for a second synthetic essay. Practice creates no saved transcript, decisions, or dossier.
 4. **Defend your own writing:** paste 250–1,200 words of argumentative prose, confirm the generated claim graph, then choose the same voice or typed viva. Text without at least four claim nodes is stopped before session creation, so it does not consume the daily allowance.
-5. **Code defense:** select **Defend this code** for the synthetic inventory tracker. The same viva loop asks only about parsed design-decision nodes, while the code room keeps indentation, line numbers, and exact graph spans visible beside the decision receipts. Voice and typed paths use the same limits and dossier pipeline.
+5. **Code defense:** select **Defend this code** for the synthetic inventory tracker. The same viva loop asks only about parsed design-decision nodes, while the code room keeps indentation, line numbers, and exact graph spans visible beside the decision receipts.
+6. **Lab-report defense:** select **Defend this lab report** to defend hypotheses, method choices, interpretations, and conclusions against the reported evidence.
+7. **Case-analysis defense:** select **Defend this case analysis** to stress-test recommendations, assumptions, tradeoffs, and rejected alternatives.
+
+All four fixture cards offer voice and typed paths through the same session allowance, server clamp, decision log, divergence analysis, and dossier pipeline.
 
 Completed recorded vivas open an unguessable student dossier link that can be copied and opened in a private window; it renders the same evidence document available to the teacher. Dossiers can also be printed from the browser with their transcript and decision-log appendices intact. The claim-graph upload and inspection flow is available at [`/inspect`](https://eleza-drab.vercel.app/inspect), and the findings-sorted teacher dossier list is at [`/triage`](https://eleza-drab.vercel.app/triage). Public session creation is limited to five sessions per IP digest per UTC day, so judges sharing one network should use the existing demo deliberately.
 
-During the viva, the understanding map shows claim coverage directly from the append-only decisions. Each rationale has **Question this decision**, a three-turn ephemeral exchange grounded in that decision, claim, and transcript receipt. A configured judge access code may be entered in the optional landing field to use the separate judge-capacity tier; the README deliberately does not publish its value.
+During the viva, the understanding map shows graph-node coverage directly from the append-only decisions. Each rationale has **Question this decision**, a three-turn ephemeral exchange grounded in that decision, target node, and transcript receipt. A configured judge access code may be entered in the optional landing field to use the separate judge-capacity tier; the README deliberately does not publish its value.
 
 ## Architecture
 
 Eleza is three connected systems:
 
-1. **Claim graph engine:** server-side `.txt` and `.pdf` extraction followed by profile-structured graph generation. Essay graphs use claim/evidence/citation nodes; code graphs use design-decision/implementation/assumption nodes. Every node must resolve to real character offsets in the submitted document or program.
+1. **Claim graph engine:** server-side `.txt` and `.pdf` extraction followed by profile-structured graph generation. Every profile restricts the model to its own node and edge vocabulary, and every node must resolve to real character offsets in the submitted artifact.
 2. **Live viva:** the Realtime voice model speaks, while a separate GPT-5.6 examiner evaluates each completed answer and chooses `probe`, `branch`, or `advance`. Every accepted decision is appended to one decision log used by both the live reasoning pane and the dossier.
 3. **Post-viva divergence analysis:** the transcript is compared with graph-owned document spans for only `cannot_reconstruct`, `mechanism_gap`, or `inconsistency`. The dossier links each finding's timestamp, answer excerpt, claim, and exact document span.
 
-Domain vocabulary is resolved through [`profiles/essay.ts`](./profiles/essay.ts) and [`profiles/code.ts`](./profiles/code.ts). Both profiles use the same graph validator, examiner contract, rationale gate, decision log, three-type divergence analysis, and dossier store; only source vocabulary, probing frame, rendering, and dossier heading differ.
+## Domain profiles
+
+The graph and examiner engines are domain-parameterized. A profile defines node vocabulary, edge semantics, probe framing, dossier wording, and its deterministic fixture. The architecture invariants, exact-span validator, routing rules, rationale gate, append-only decision log, three divergence types, understanding map, meta-viva limits, rate budget, and dossier receipts are universal.
+
+| Profile | Nodes | Edges | Probe emphasis | Fixture acceptance weak spot |
+|---|---|---|---|---|
+| [Essay](./profiles/essay.ts) | `claim`, `evidence`, `citation` | `supports`, `rebuts`, `depends_on` | Reconstruct the claim, evidence, mechanism, and dependency | [`community-gardens-argument.txt`](./fixtures/community-gardens-argument.txt): the standard deterministic eight-claim route; [`weak-viva.json`](./fixtures/divergence/weak-viva.json) cannot reconstruct paragraph three |
+| [Code](./profiles/code.ts) | `design_decision`, `implementation`, `assumption` | `depends_on`, `constrains`, `alternative_to` | Justification, failure modes, and rejected alternatives | [`code-inventory-tracker.py`](./fixtures/code-inventory-tracker.py): a name-keyed dictionary silently replaces a different SKU with the same display name |
+| [Lab report](./profiles/lab-report.ts) | `hypothesis`, `method_choice`, `interpretation`, `conclusion` | `supports`, `tests`, `depends_on` | Result-to-interpretation discipline, falsification, and controls | [`lab-photosynthesis-report.txt`](./fixtures/lab-photosynthesis-report.txt): the conclusion overreaches one distance-and-bubble-count result into a universal sole-factor claim |
+| [Case analysis](./profiles/case-analysis.ts) | `recommendation`, `assumption`, `tradeoff`, `rejected_alternative` | `supports`, `undermines`, `depends_on` | Stress the assumption that carries the recommendation | [`case-expansion-memo.txt`](./fixtures/case-expansion-memo.txt): its three-afternoon schedule silently depends on spare volunteer capacity the memo never states or supports |
 
 The architecture has five non-negotiable invariants:
 
@@ -57,7 +70,7 @@ Codex implemented the application in acceptance-tested slices rather than scaffo
 | Dossier | Three-type divergence analysis, semantic receipt validation, persisted dossiers, timestamp-to-document links, and evidence appendices | `c4fcfba`, `fa24e8d` |
 | Judge flow | Zero-login fixture demo, unrecorded practice, typed fallback, teacher triage, rate limits, and Vercel deployment | `4253a2a`, `09c9243` |
 | Voice hardening | Minimum-lifetime client tokens, explicit answer commits, Safari-safe playback, and peer/ICE diagnostics | `347870e`, `340857a` |
-| Domain profiles | Behavior-preserving essay extraction plus code graph vocabulary, deterministic Python defense fixture, profile-aware routing, code-room source rails, and code dossier receipts | Phase 8A–8B |
+| Domain profiles | Behavior-preserving essay extraction plus four profile vocabularies, deterministic domain fixtures, profile-aware routing and dossiers, code-room source rails, and shared gates | Phase 8A–8C |
 
 The complete chronological Git record harvested for this narrative is:
 
@@ -121,7 +134,7 @@ Model routing is centralized in [`src/lib/models.ts`](./src/lib/models.ts); Luna
 | System | Model | Use |
 |---|---|---|
 | Claim graph engine | `gpt-5.6-sol` | Runs once per submission with the base [`prompts/claim-graph.md`](./prompts/claim-graph.md) plus the selected profile vocabulary. Strict structured output produces only that profile's node and edge types; Zod then validates IDs, allowed vocabulary, and real character spans before persistence. Sol is used because every downstream question inherits the graph's granularity. |
-| Live viva examiner | `gpt-5.6-terra`, with `gpt-5.6-sol` for gate retries | Receives a stable profile prompt-plus-graph prefix and the latest completed answer as a fresh suffix. It emits the answer summary, assessment, action, target node, next node, next question, and rationale. Dynamic Zod validation rejects any rationale that omits the target ID or an exact transcript substring of at least five words or 25 contiguous characters, and rejects invalid probe/branch/advance routing. Essay probing reconstructs claims; code probing asks for justification, failure modes, and rejected alternatives. Terra also powers the ephemeral [`prompts/meta-viva.md`](./prompts/meta-viva.md) exchange. The separate `gpt-realtime-2.1` session only voices the routed question. |
+| Live viva examiner | `gpt-5.6-terra`, with `gpt-5.6-sol` for gate retries | Receives a stable profile prompt-plus-graph prefix and the latest completed answer as a fresh suffix. It emits the answer summary, assessment, action, target node, next node, next question, and rationale. Dynamic Zod validation rejects any rationale that omits the target ID or an exact transcript substring of at least five words or 25 contiguous characters, and rejects invalid probe/branch/advance routing. Probe framing comes from the selected profile: claim reconstruction for essays, design justification for code, evidentiary discipline for lab reports, and assumption stress for cases. Terra also powers the ephemeral [`prompts/meta-viva.md`](./prompts/meta-viva.md) exchange. The separate `gpt-realtime-2.1` session only voices the routed question. |
 | Post-viva divergence | `gpt-5.6-sol` | Runs asynchronously with [`prompts/divergence.md`](./prompts/divergence.md) after the viva. It classifies content-reconstruction differences into exactly three allowed types and returns timestamp/excerpt/node/span receipts. For code, a mechanism gap can be an unexplained dependency or missing failure mode; code style is never evidence. Semantic validation rejects invented timestamps, excerpts, node IDs, or source spans before dossier persistence. A second Sol call using [`prompts/follow-up.md`](./prompts/follow-up.md) produces node-linked prompts for the teacher's later conversation. |
 
 ## Local setup
@@ -185,9 +198,12 @@ All repository samples are synthetic; no real student work or institution names 
 - [`fixtures/community-gardens-argument.txt`](./fixtures/community-gardens-argument.txt): primary 537-word argumentative judge essay with a deterministic eight-claim graph.
 - [`fixtures/practice-transit-argument.txt`](./fixtures/practice-transit-argument.txt): separate unrecorded warm-up essay.
 - [`fixtures/code-inventory-tracker.py`](./fixtures/code-inventory-tracker.py): original introductory Python inventory assignment with an intentionally unjustified name-keyed dictionary; [`fixtures/README.md`](./fixtures/README.md) documents the exact duplicate-name weak spot.
+- [`fixtures/lab-photosynthesis-report.txt`](./fixtures/lab-photosynthesis-report.txt): original lab report whose universal conclusion overreaches the experiment's specific result.
+- [`fixtures/case-expansion-memo.txt`](./fixtures/case-expansion-memo.txt): original case memo whose recommendation relies on unstated spare volunteer capacity.
 - [`fixtures/examiner`](./fixtures/examiner): five canned answers—strong, restated conclusion, contradictory, evasive, and off-topic—for examiner gate and routing tests.
 - [`fixtures/divergence/weak-viva.json`](./fixtures/divergence/weak-viva.json): deliberately weak paragraph-three defense used to verify one exact `cannot_reconstruct` receipt and no findings on defended claims.
 - [`fixtures/divergence/code-weak-viva.json`](./fixtures/divergence/code-weak-viva.json): scripted code defense used to verify one exact `mechanism_gap` on the documented dictionary span and zero findings on defended decisions.
+- [`fixtures/divergence/lab-weak-viva.json`](./fixtures/divergence/lab-weak-viva.json) and [`fixtures/divergence/case-weak-viva.json`](./fixtures/divergence/case-weak-viva.json): scripted defenses that yield exactly one receipt on each documented weak spot and none on strongly defended nodes.
 - [`fixtures/viva-answers.json`](./fixtures/viva-answers.json): deterministic answers for wired-viva acceptance runs.
 
 ## Testing
@@ -201,7 +217,7 @@ npm run build
 npm run verify:client-secrets
 ```
 
-- `npm test` covers examiner rationale/routing gates, all five canned answer classes, both domain profiles, code span and routing determinism, the scripted weak code defense, grounded meta-viva limits, decision-log understanding-map state, divergence and teacher-follow-up receipts, triage summaries, pasted-text boundaries, signed student dossier links, judge-cap helpers, explicit Realtime audio commits, the hardcoded three-minute transport, and three deterministic five-minute pipeline runs.
+- `npm test` covers examiner rationale/routing gates, all five canned answer classes, all four domain profiles, exact-span and routing determinism, each scripted weak defense, grounded meta-viva limits, decision-log understanding-map state, divergence and teacher-follow-up receipts, triage summaries, pasted-text boundaries, signed student dossier links, judge-cap helpers, explicit Realtime audio commits, the hardcoded three-minute transport, and three deterministic five-minute pipeline runs.
 - `npm run lint` runs TypeScript without emitting files.
 - `npm run build` performs the production Next.js build.
 - `npm run verify:client-secrets` scans built browser assets for the configured server secret values.
@@ -231,8 +247,10 @@ All acceptance commands use only synthetic fixtures. The viva, stored-dossier, r
 - Copy the student dossier link and open it in a private window; confirm it renders the same receipts. Use **Print dossier** and inspect the A4 preview, including both appendices.
 - Repeat through **Use typed answers instead** and confirm the same dossier structure.
 - Select **Defend this code**, confirm the live room shows the real Python fixture in black mono with graphite line numbers and a 3px margin rail, then answer about one design choice. Confirm every question and receipt uses a `design_decision` node and the dossier heading reads **Decisions defended**.
+- Select **Defend this lab report**, defend the hypothesis and controls, then fail to bound the sole-factor conclusion. Confirm the dossier reads **Interpretations defended** and places one finding on the documented conclusion sentence.
+- Select **Defend this case analysis**, defend the pilot and tradeoff, then say the memo has no support for spare volunteer capacity. Confirm the dossier reads **Assumptions defended** and places one finding on the scheduling span.
 - Paste a 400-word argument under **Defend your own writing**, confirm its graph, and complete a viva whose questions and dossier spans refer to that text. Confirm a sub-250-word paste is stopped before graph or session creation.
-- Open `/triage` and confirm completed vivas are sorted by finding count, types appear inline, and a nonzero count jumps to the first finding without turning zero findings into a positive verdict.
+- Open `/triage` and confirm every row shows its profile, completed vivas are sorted by finding count, types appear inline, and a nonzero count jumps to the first finding without turning zero findings into a positive verdict.
 - If the organizer supplied a judge access code, enter it in the optional field and confirm a session can start after the ordinary five-session connection allowance is exhausted.
 
 ## Production deployment on Vercel

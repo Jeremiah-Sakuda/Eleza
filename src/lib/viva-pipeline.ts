@@ -46,9 +46,7 @@ export function openingQuestion(graph: ClaimGraph, profileId: ProfileId = "essay
   const parsed = claimGraphSchema.parse(graph);
   const target = claims(parsed, profileId)[0];
   if (!target) throw new Error("A viva requires at least one examinable graph node.");
-  const text = profileId === "code"
-    ? `Begin with this design decision: “${target.label}” Why did you choose this structure, and what input would make it break?`
-    : `Begin with this claim: “${target.label}” Explain the mechanism in your own words.`;
+  const text = openingQuestionText(target.label, target.type, profileId);
   return assertQuestionTrace({
     id: "opening-0",
     kind: "opening",
@@ -64,9 +62,7 @@ export function prefetchBridgeQuestions(graph: ClaimGraph, count = PREFETCHED_BR
   // DECISION: bridges are deterministic and precomputed, so examiner latency can never grant the voice model routing authority.
   return Array.from({ length: count }, (_, index) => {
     const target = claimNodes[(index + 1) % claimNodes.length];
-    const text = profileId === "code"
-      ? `While I consider that answer, turn to this decision: “${target.label}” What alternative did you reject, and what would break if this choice changed?`
-      : `While I consider that answer, turn to this claim: “${target.label}” What role does it play in the argument?`;
+    const text = bridgeQuestionText(target.label, target.type, profileId);
     return assertQuestionTrace({
       id: `bridge-${index}`,
       kind: "bridge",
@@ -74,6 +70,20 @@ export function prefetchBridgeQuestions(graph: ClaimGraph, count = PREFETCHED_BR
       text,
     }, parsed, profileId);
   });
+}
+
+function openingQuestionText(label: string, nodeType: string, profileId: ProfileId) {
+  if (profileId === "code") return `Begin with this design decision: “${label}” Why did you choose this structure, and what input would make it break?`;
+  if (profileId === "lab_report") return `Begin with this ${nodeType.replaceAll("_", " ")}: “${label}” Which result or control bears on it, and what outcome would have weakened it?`;
+  if (profileId === "case_analysis") return `Begin with this ${nodeType.replaceAll("_", " ")}: “${label}” Which assumption does it depend on, and what happens if that assumption is wrong?`;
+  return `Begin with this claim: “${label}” Explain the mechanism in your own words.`;
+}
+
+function bridgeQuestionText(label: string, nodeType: string, profileId: ProfileId) {
+  if (profileId === "code") return `While I consider that answer, turn to this decision: “${label}” What alternative did you reject, and what would break if this choice changed?`;
+  if (profileId === "lab_report") return `While I consider that answer, turn to this ${nodeType.replaceAll("_", " ")}: “${label}” Why does the reported evidence support it, and where is the limit?`;
+  if (profileId === "case_analysis") return `While I consider that answer, turn to this ${nodeType.replaceAll("_", " ")}: “${label}” Which assumption is carrying the recommendation here?`;
+  return `While I consider that answer, turn to this claim: “${label}” What role does it play in the argument?`;
 }
 
 export class VivaQuestionPipeline {

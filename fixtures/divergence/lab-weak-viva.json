@@ -1,0 +1,32 @@
+{
+  "answers": [
+    {
+      "claim_id": "hypothesis_light_rate",
+      "timestamp": 24000,
+      "answer": "I predicted more bubbles near the lamp because light supplies energy for the light-dependent reactions, and equal or higher counts far away would have challenged that prediction.",
+      "assessment": "strong"
+    },
+    {
+      "claim_id": "method_choice_equal_bicarbonate",
+      "timestamp": 51000,
+      "answer": "Equal bicarbonate reduced carbon availability as a competing explanation, so lamp distance was the intended difference rather than unequal dissolved carbon.",
+      "assessment": "strong"
+    },
+    {
+      "claim_id": "interpretation_distance_gradient",
+      "timestamp": 78000,
+      "answer": "The means fell from eighteen to twelve to seven as distance increased, while temperature stayed stable, so the ordered pattern supports the hypothesis within this setup.",
+      "assessment": "strong"
+    },
+    {
+      "claim_id": "conclusion_sole_factor",
+      "timestamp": 106000,
+      "answer": "The result proves light is the sole factor everywhere, but I cannot explain how these three cuttings ruled out carbon, temperature, or plant differences in other conditions.",
+      "assessment": "partial"
+    }
+  ],
+  "expected_finding": {
+    "claim_id": "conclusion_sole_factor",
+    "type": "mechanism_gap"
+  }
+}

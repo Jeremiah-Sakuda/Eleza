@@ -121,10 +121,11 @@ export async function analyzeDivergence(
   throw new Error(`Divergence analysis failed receipt validation: ${failures.join(" | ")}`);
 }
 
-function divergenceProfileContext(profileId: "essay" | "code") {
-  return profileId === "code"
-    ? "This is a code defense. Primary examinable nodes are `design_decision` nodes. Assess whether the student can justify the structure, explain its implementation and constraints, identify what input or change would break it, and name rejected alternatives. A mechanism gap may be a missing failure mode or unexplained dependency; do not treat code style as evidence."
-    : "This is an essay defense. Primary examinable nodes are `claim` nodes. Assess whether the student can reconstruct each claim's evidence, mechanism, dependencies, and relationship to the argument.";
+function divergenceProfileContext(profileId: "essay" | "code" | "lab_report" | "case_analysis") {
+  if (profileId === "code") return "This is a code defense. Primary examinable nodes are `design_decision` nodes. Assess whether the student can justify the structure, explain its implementation and constraints, identify what input or change would break it, and name rejected alternatives. A mechanism gap may be a missing failure mode or unexplained dependency; do not treat code style as evidence.";
+  if (profileId === "lab_report") return "This is a lab-report defense. Examinable nodes are hypotheses, method choices, interpretations, and conclusions. Assess whether the student can connect results to interpretations, name falsifying outcomes, justify controls, and bound conclusions to the evidence reported. A mechanism gap may be a missing evidentiary link or an unexplained control; do not infer scientific quality beyond the supplied report and answer.";
+  if (profileId === "case_analysis") return "This is a case-analysis defense. Examinable nodes are recommendations, assumptions, tradeoffs, and rejected alternatives. Assess whether the student can identify which assumptions carry a recommendation and explain what changes when one fails. A mechanism gap may be an unstated dependency or unexplained tradeoff; do not infer business performance beyond the supplied analysis and answer.";
+  return "This is an essay defense. Primary examinable nodes are `claim` nodes. Assess whether the student can reconstruct each claim's evidence, mechanism, dependencies, and relationship to the argument.";
 }
 
 async function generateWithOpenAI({ model, prompt, input, feedback }: Parameters<DivergenceGenerator>[0]) {

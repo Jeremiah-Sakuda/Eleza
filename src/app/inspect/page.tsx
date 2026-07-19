@@ -14,6 +14,8 @@ type InspectionHandoff = { title: string; sourceKind: "paste"; durationMs: numbe
 const colors = {
   claim: "#3455db", evidence: "#16836d", citation: "#9b5f18",
   design_decision: "#1e6b4e", implementation: "#4f5966", assumption: "#9b5f18",
+  hypothesis: "#3455db", method_choice: "#4f5966", interpretation: "#1e6b4e", conclusion: "#9b5f18",
+  recommendation: "#1e6b4e", tradeoff: "#9b5f18", rejected_alternative: "#4f5966",
 } as const;
 
 export default function InspectionPage() {

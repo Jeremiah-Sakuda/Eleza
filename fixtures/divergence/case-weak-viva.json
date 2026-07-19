@@ -1,0 +1,32 @@
+{
+  "answers": [
+    {
+      "claim_id": "recommendation_pop_up_pilot",
+      "timestamp": 25000,
+      "answer": "A twelve-week pop-up is reversible, addresses the travel barrier, and avoids spending the reserve on a lease before demand and transfer reliability are demonstrated.",
+      "assessment": "strong"
+    },
+    {
+      "claim_id": "tradeoff_reservations_for_control",
+      "timestamp": 53000,
+      "answer": "Advance reservations reduce spontaneity, but they keep satellite stock small and let staff check exactly which items should move between sites.",
+      "assessment": "strong"
+    },
+    {
+      "claim_id": "rejected_alternative_delivery",
+      "timestamp": 81000,
+      "answer": "Delivery was rejected because insurance, address handling, and unpredictable route time add recurring obligations that the room-based pilot avoids.",
+      "assessment": "strong"
+    },
+    {
+      "claim_id": "assumption_staff_capacity",
+      "timestamp": 108000,
+      "answer": "I used the same volunteer rotation, but I cannot reconstruct evidence that six volunteers can cover three new afternoons without reducing the current storefront schedule.",
+      "assessment": "unsupported"
+    }
+  ],
+  "expected_finding": {
+    "claim_id": "assumption_staff_capacity",
+    "type": "cannot_reconstruct"
+  }
+}

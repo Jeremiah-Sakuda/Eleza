@@ -1,4 +1,5 @@
 import { validateGraphAgainstText, type ClaimGraph } from "@/lib/claim-graph";
+import type { ProfileId } from "@/lib/domain-profile";
 
 type ClaimDefinition = { id: string; prefix: string; label: string };
 
@@ -94,4 +95,149 @@ export function codeDemoGraph(sourceText: string): ClaimGraph {
       { source: "implementation_stable_save", target: "design_decision_name_key", type: "depends_on" },
     ],
   }, sourceText, "code");
+}
+
+type FixtureNodeDefinition = {
+  id: string;
+  type: ClaimGraph["nodes"][number]["type"];
+  text: string;
+  label: string;
+};
+
+function graphFromExactSpans(
+  sourceText: string,
+  definitions: FixtureNodeDefinition[],
+  edges: ClaimGraph["edges"],
+  profileId: ProfileId,
+) {
+  const nodes = definitions.map((definition) => {
+    const start = sourceText.indexOf(definition.text);
+    if (start < 0) throw new Error(`${profileId} fixture is missing span: ${definition.text}`);
+    return {
+      id: definition.id,
+      type: definition.type,
+      label: definition.label,
+      source_span: { start, end: start + definition.text.length },
+    };
+  });
+  return validateGraphAgainstText({ nodes, edges }, sourceText, profileId);
+}
+
+const labReportNodes: FixtureNodeDefinition[] = [
+  {
+    id: "hypothesis_light_rate",
+    type: "hypothesis",
+    text: "I predicted that a cutting placed closer to the lamp would release more oxygen bubbles per minute because greater light intensity supplies more energy for the light-dependent reactions.",
+    label: "A cutting closer to the lamp should release more oxygen bubbles per minute.",
+  },
+  {
+    id: "method_choice_falsification",
+    type: "method_choice",
+    text: "A result in which the farthest cutting produced as many or more bubbles than the nearest cutting would have counted against this prediction.",
+    label: "The report identifies a result that would count against the hypothesis.",
+  },
+  {
+    id: "method_choice_equal_bicarbonate",
+    type: "method_choice",
+    text: "Sodium bicarbonate was kept equal across cups so dissolved carbon availability would not be the intended difference between conditions.",
+    label: "Equal bicarbonate amounts control one source of carbon variation.",
+  },
+  {
+    id: "method_choice_temperature_control",
+    type: "method_choice",
+    text: "A water-filled beaker stood between the lamp and each cup to reduce heating, and temperature was checked before every count.",
+    label: "A water barrier and repeated temperature checks reduce heating as an alternative explanation.",
+  },
+  {
+    id: "interpretation_distance_gradient",
+    type: "interpretation",
+    text: "These results support the hypothesis within the tested setup because the closest cutting had the highest mean bubble count and the farthest cutting had the lowest.",
+    label: "The ordered bubble counts support the prediction within the tested setup.",
+  },
+  {
+    id: "interpretation_temperature_stability",
+    type: "interpretation",
+    text: "The stable temperature readings make heating a less likely explanation for the pattern, while the equal bicarbonate amounts reduce one source of carbon variation.",
+    label: "Stable temperatures and equal bicarbonate make two alternative explanations less likely.",
+  },
+  {
+    id: "conclusion_sole_factor",
+    type: "conclusion",
+    text: "The trial shows that light intensity is the sole factor controlling photosynthesis rate in aquatic plants under all environmental conditions.",
+    label: "The conclusion claims light intensity alone controls photosynthesis in all conditions.",
+  },
+  {
+    id: "conclusion_tested_scope",
+    type: "conclusion",
+    text: "The measured pattern more narrowly establishes that, for these three cuttings and this lamp arrangement, shorter lamp distance was associated with a higher bubble count.",
+    label: "The measured result is limited to the tested cuttings and lamp arrangement.",
+  },
+];
+
+export function labReportDemoGraph(sourceText: string): ClaimGraph {
+  return graphFromExactSpans(sourceText, labReportNodes, [
+    { source: "method_choice_falsification", target: "hypothesis_light_rate", type: "tests" },
+    { source: "method_choice_equal_bicarbonate", target: "interpretation_temperature_stability", type: "supports" },
+    { source: "method_choice_temperature_control", target: "interpretation_temperature_stability", type: "supports" },
+    { source: "interpretation_distance_gradient", target: "hypothesis_light_rate", type: "supports" },
+    { source: "interpretation_temperature_stability", target: "interpretation_distance_gradient", type: "supports" },
+    { source: "conclusion_sole_factor", target: "interpretation_distance_gradient", type: "depends_on" },
+    { source: "conclusion_tested_scope", target: "interpretation_distance_gradient", type: "depends_on" },
+  ], "lab_report");
+}
+
+const caseAnalysisNodes: FixtureNodeDefinition[] = [
+  {
+    id: "recommendation_pop_up_pilot",
+    type: "recommendation",
+    text: "The cooperative should run a twelve-week pop-up pickup site in the unused meeting room of the eastern community center.",
+    label: "The cooperative should test a twelve-week eastern pop-up pickup site.",
+  },
+  {
+    id: "recommendation_exit_metrics",
+    type: "recommendation",
+    text: "Continuation should depend on at least forty completed pickups, fewer than five inventory-transfer errors, and survey evidence that the location reduced travel barriers.",
+    label: "Continuation depends on explicit demand, reliability, and access measures.",
+  },
+  {
+    id: "assumption_staff_capacity",
+    type: "assumption",
+    text: "The site would open Tuesday, Thursday, and Saturday afternoons and would hold only items reserved online by noon the previous day.",
+    label: "The schedule assumes the existing volunteers can cover three new afternoons without weakening the storefront.",
+  },
+  {
+    id: "tradeoff_reservations_for_control",
+    type: "tradeoff",
+    text: "Restricting the pop-up to advance reservations reduces spontaneity, but it keeps the satellite inventory small and makes missing-item checks practical.",
+    label: "The plan trades spontaneous borrowing for simpler inventory control.",
+  },
+  {
+    id: "tradeoff_transfer_trips",
+    type: "tradeoff",
+    text: "The plan also accepts two weekly transfer trips in exchange for avoiding a permanent duplicate stock.",
+    label: "Two weekly transfer trips are accepted to avoid duplicate permanent stock.",
+  },
+  {
+    id: "rejected_alternative_delivery",
+    type: "rejected_alternative",
+    text: "Home delivery was rejected because a driver route would require vehicle insurance, address handling, and unpredictable travel time for each rental.",
+    label: "Home delivery is rejected because it adds insurance, data-handling, and route costs.",
+  },
+  {
+    id: "rejected_alternative_storefront",
+    type: "rejected_alternative",
+    text: "A full second storefront was also rejected for now because rent and duplicate storage would consume most of the reserve before demand at the new location is demonstrated.",
+    label: "A permanent storefront is rejected until demand justifies its fixed costs.",
+  },
+];
+
+export function caseAnalysisDemoGraph(sourceText: string): ClaimGraph {
+  return graphFromExactSpans(sourceText, caseAnalysisNodes, [
+    { source: "assumption_staff_capacity", target: "recommendation_pop_up_pilot", type: "depends_on" },
+    { source: "tradeoff_reservations_for_control", target: "recommendation_pop_up_pilot", type: "supports" },
+    { source: "tradeoff_transfer_trips", target: "recommendation_pop_up_pilot", type: "undermines" },
+    { source: "rejected_alternative_delivery", target: "recommendation_pop_up_pilot", type: "supports" },
+    { source: "rejected_alternative_storefront", target: "recommendation_pop_up_pilot", type: "supports" },
+    { source: "recommendation_exit_metrics", target: "recommendation_pop_up_pilot", type: "depends_on" },
+  ], "case_analysis");
 }

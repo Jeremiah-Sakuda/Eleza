@@ -24,7 +24,7 @@ export function UnderstandingMap({ graph, decisionLog, compact = false, profileI
         const position = positions.get(claim.id)!;
         return <g className={`understanding-node ${status}`} key={claim.id} transform={`translate(${position.x} ${position.y})`}>
           <rect width="118" height="30" rx="1" />
-          <text x="6" y="11">{profileId === "code" ? "DECISION" : "CLAIM"} {String(index + 1).padStart(2, "0")}</text>
+          <text x="6" y="11">{claim.type.replaceAll("_", " ").toUpperCase().slice(0, 13)} {String(index + 1).padStart(2, "0")}</text>
           <text className="understanding-node-id" x="6" y="23">{claim.id.slice(0, 17)}</text>
         </g>;
       })}

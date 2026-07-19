@@ -4,7 +4,7 @@ import { PrintDossierButton } from "@/app/dossier/print-dossier-button";
 import { StudentDossierLink } from "@/app/dossier/student-dossier-link";
 import { MetaVivaExchange } from "@/app/meta-viva-exchange";
 import { UnderstandingMap } from "@/app/understanding-map";
-import { getDomainProfile } from "@/lib/domain-profile";
+import { getDomainProfile, profileDefenseLabel, profileSourceLabel } from "@/lib/domain-profile";
 import { isPrimaryNode } from "@/lib/claim-graph";
 
 export function DossierView({ dossier, studentPath }: { dossier: Dossier; studentPath?: string }) {
@@ -19,7 +19,8 @@ export function DossierView({ dossier, studentPath }: { dossier: Dossier; studen
     <div className="dossier-actions"><PrintDossierButton /></div>
     {studentPath && <StudentDossierLink path={studentPath} />}
     <header className="dossier-header">
-      <p>ELEZA — VIVA DOSSIER{isCode ? " · CODE DEFENSE" : ""}</p>
+      <p>ELEZA — VIVA DOSSIER</p>
+      <p className="dossier-defense-label">{profileDefenseLabel(dossier.profileId)}</p>
       <div className="dossier-rule" />
       <h1>{dossier.title}</h1>
       <div className="dossier-meta">Anonymous student · {formatDate(dossier.createdAt)} · Viva duration {formatElapsed(dossier.durationMs)}</div>
@@ -30,11 +31,11 @@ export function DossierView({ dossier, studentPath }: { dossier: Dossier; studen
     <UnderstandingMap graph={dossier.graph} decisionLog={dossier.decisionLog} profileId={dossier.profileId} />
 
     <DossierSection title={profile.dossier_vocab.claims_defended}>
-      {dossier.analysis.claims_defended.length === 0 && <p className="dossier-empty">No {isCode ? "decision" : "claim"} met the defended receipt rule.</p>}
+      {dossier.analysis.claims_defended.length === 0 && <p className="dossier-empty">No {profile.artifact_noun} node met the defended receipt rule.</p>}
       {dossier.analysis.claims_defended.map((defended, index) => {
         const claim = claimNodes.get(defended.claim_id);
         return <article className="defended-claim" key={defended.claim_id}>
-          <div className="dossier-exhibit">{isCode ? "DECISION" : "CLAIM"} {String(index + 1).padStart(2, "0")} · {defended.claim_id}</div>
+          <div className="dossier-exhibit">{claim?.type.replaceAll("_", " ").toUpperCase() ?? "NODE"} {String(index + 1).padStart(2, "0")} · {defended.claim_id}</div>
           <h2>{claim?.label ?? defended.claim_id}</h2>
           {isCode && claim && <CodeReceipt text={dossier.sourceText} start={claim.source_span.start} end={claim.source_span.end} tone="defended" />}
           <div className="defended-receipt">
@@ -65,7 +66,7 @@ export function DossierView({ dossier, studentPath }: { dossier: Dossier; studen
             </div>
             <div className="finding-divider" />
             <div id={`finding-${index}-document`}>
-              <div className="receipt-label">FROM THE {isCode ? "PROGRAM" : "ESSAY"} · {isCode ? lineRangeLabel(dossier.sourceText, finding.doc_span.start, finding.doc_span.end) : `CHARACTERS ${finding.doc_span.start}–${finding.doc_span.end}`}</div>
+              <div className="receipt-label">FROM THE {profileSourceLabel(dossier.profileId)} · {isCode ? lineRangeLabel(dossier.sourceText, finding.doc_span.start, finding.doc_span.end) : `CHARACTERS ${finding.doc_span.start}–${finding.doc_span.end}`}</div>
               <a className="document-receipt" href={`#finding-${index}-transcript`}>
                 {isCode
                   ? <CodeReceipt text={dossier.sourceText} start={finding.doc_span.start} end={finding.doc_span.end} tone="finding" />

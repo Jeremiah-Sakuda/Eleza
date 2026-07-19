@@ -1,0 +1,21 @@
+Light availability and photosynthesis in aquatic plant cuttings
+
+Research question and hypothesis
+
+This investigation asked how lamp distance affects the apparent photosynthesis rate of equal aquatic plant cuttings. I predicted that a cutting placed closer to the lamp would release more oxygen bubbles per minute because greater light intensity supplies more energy for the light-dependent reactions. A result in which the farthest cutting produced as many or more bubbles than the nearest cutting would have counted against this prediction.
+
+Method
+
+Three 8-centimeter cuttings from the same healthy stem were placed separately in identical clear cups containing 200 milliliters of water and 0.5 grams of sodium bicarbonate. Sodium bicarbonate was kept equal across cups so dissolved carbon availability would not be the intended difference between conditions. The cups were positioned 10, 25, and 50 centimeters from one LED lamp. A water-filled beaker stood between the lamp and each cup to reduce heating, and temperature was checked before every count. Each cutting acclimated for five minutes before bubbles leaving the cut end were counted for three one-minute trials. Bubble count was used as a practical proxy for oxygen production; bubble sizes were not measured.
+
+Results
+
+The cutting 10 centimeters from the lamp produced 17, 19, and 18 bubbles per minute, for a mean of 18.0. The 25-centimeter cutting produced 12, 11, and 13 bubbles per minute, for a mean of 12.0. The 50-centimeter cutting produced 7, 8, and 6 bubbles per minute, for a mean of 7.0. Water temperature stayed between 21.0 and 21.6 degrees Celsius in all nine trials. The ordered decrease in mean bubble count matched the ordered increase in lamp distance.
+
+Interpretation and limitations
+
+These results support the hypothesis within the tested setup because the closest cutting had the highest mean bubble count and the farthest cutting had the lowest. The stable temperature readings make heating a less likely explanation for the pattern, while the equal bicarbonate amounts reduce one source of carbon variation. However, one cutting was used at each distance, so natural differences among cuttings could have contributed to the result. Counting bubbles also assumes bubbles were similar in size, which was not verified. Repeating the investigation with multiple cuttings at each distance and measuring collected oxygen volume would test the interpretation more directly.
+
+Conclusion
+
+The trial shows that light intensity is the sole factor controlling photosynthesis rate in aquatic plants under all environmental conditions. The measured pattern more narrowly establishes that, for these three cuttings and this lamp arrangement, shorter lamp distance was associated with a higher bubble count. Future trials should vary carbon availability and temperature independently before making a general claim about which factor controls the rate.

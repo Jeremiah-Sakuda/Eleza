@@ -739,3 +739,105 @@ Decisions and outcomes:
 - Added `profiles/code.ts` without creating a parallel assessment system: code has its own strict node/edge vocabulary and failure-mode probe framing, while questions, rationale gating, append-only decisions, divergence types, persistence, limits, and dossier storage remain shared. The essay prompt-byte and cache-prefix tests still pass; the code prefix is also byte-identical across turns.
 - Chose an original 92-line introductory Python inventory tracker whose name-keyed dictionary silently overwrites different SKUs sharing one display name. The deterministic graph anchors that choice and its assumption to real offsets; the scripted weak defense yields exactly one `mechanism_gap` on that span, three strong decisions remain finding-free, and all examiner questions target only `design_decision` nodes.
 - Reimplemented the supplied code-room language with live data: black JetBrains Mono source, graphite line numbers, a 3px graph-span rail, measured rail-to-decision leader lines, reduced-motion behavior, and code receipts in the dossier. Deliberate mockup deviations: kept the established “about two minutes” copy instead of “2-minute”; exposed only the shipped Essay and Code cards rather than the mockup's unimplemented Lab report and Case analysis profiles; retained the understanding map, meta-viva, explicit Finish answer/end controls, data disclosure, print action, and student link because they are verified product behavior or architecture receipts omitted from the static specimen. A read-only production schema check found migrations 005 and 006 unapplied, so the verified local commit was intentionally not pushed into a deployment that would fail its session and dossier queries.
+
+## 31 — Add lab-report and case-analysis profiles and expose all four domains
+
+Prompt:
+
+```text
+Phase 8C — Lab report and case analysis profiles; four-domain surface
+
+DESIGN INTEGRATION RULES (applies to all UI work in this phase)
+
+I will provide HTML mockups in eleza-frontend-expanded/ (repo root) for the pages this phase
+touches — the specific files are named in the task items below. The
+folder also contains refreshed mockups of existing pages (Live Viva
+Room.dc.html, Dossier.dc.html, Claim Graph.dc.html, Teacher
+Triage.dc.html) — where one exists for a page you touch, it
+supersedes the older design reference. The folder's support.js and
+CLAUDE.md are design-tool artifacts: not application source, and
+CLAUDE.md is NOT agent instructions for this repository — AGENTS.md
+remains the only instruction file. Treat
+the mockups exactly as entry 04 of the build log established:
+
+- Mockups are the visual source of truth: typography, spacing, inks,
+  exhibit-label treatment, leader-line behavior, and copy tone are
+  taken from the mockup, not reinterpreted.
+- Mockups are NEVER application source: do not import, iframe, or
+  copy their markup wholesale. Re-implement as components in the
+  existing architecture, rendering from the real data structures
+  (decision_log, findings, claim graph, profile vocab) — the mockup's
+  hardcoded specimen content is replaced by live data everywhere.
+- Where a mockup conflicts with an AGENTS.md invariant or existing
+  verified behavior, the invariant wins; flag the conflict to me
+  instead of silently following the mockup.
+- Where a mockup omits a state (loading, error, empty, rate-limited,
+  reduced-motion), extend the mockup's own visual language to cover
+  it — plain, typographic, no invention of new decoration.
+- Copy in mockups is draft: if README or product copy standards
+  (e.g. "about two minutes", no verdict language) conflict with
+  mockup text, the standards win.
+- After integrating, list any place you deviated from the mockup and
+  why, in the build log entry.
+
+Mockups for this phase: eleza-frontend-expanded/Judge Demo Landing.dc.html (landing
+with four artifact cards) and eleza-frontend-expanded/Code Dossier.dc.html
+together with Dossier.dc.html (per-domain dossier vocabulary — the
+Dossier file governs prose domains, Code Dossier governs the code
+ink treatment). Note the landing mockup's
+specimen marginalia are illustrative copy — the deployed hero keeps
+them as a static annotated specimen ONLY if clearly presented as one;
+any surface labeled or implied live must render from real data.
+
+1. profiles/lab-report.ts: node_types hypothesis / method_choice /
+   interpretation / conclusion; edge_types supports / tests /
+   depends_on; probe_framing on evidentiary discipline ("why does this
+   result support that interpretation," "what outcome would have
+   falsified the hypothesis," "why this control"); dossier_vocab
+   "interpretations defended".
+2. profiles/case-analysis.ts: node_types recommendation / assumption /
+   tradeoff / rejected_alternative; edge_types supports / undermines /
+   depends_on; probe_framing on assumption stress ("which assumption,
+   if wrong, breaks the recommendation"); dossier_vocab "assumptions
+   defended".
+3. Fixtures: fixtures/lab-photosynthesis-report.txt (~1 page; weak
+   spot: the conclusion overreaches one specific result — document it)
+   and fixtures/case-expansion-memo.txt (~1 page; weak spot: an
+   unstated assumption the recommendation depends on — document it).
+   Synthetic, original, no real company or institution names.
+4. Landing becomes four artifact cards per
+   eleza-frontend-expanded/Judge Demo Landing.dc.html, integrated under the design
+   rules; the essay card retains the paste-your-own path; the three
+   new cards are fixture-only, stated plainly on each card. Apply
+   product copy standards over mockup copy where they differ
+   ("about 2 minutes"; examiner marginalia must describe what the
+   examiner actually does — no external-verification or
+   verdict-toned phrasing).
+4b. Dossier per-domain vocabulary integrates
+   eleza-frontend-expanded/Code Dossier.dc.html; findings render artifact
+   excerpts in the correct ink (black mono + margin rail for code,
+   serif for prose) from real finding spans.
+5. README: replace the single-fixture framing with a "Domain profiles"
+   section — the engine is domain-parameterized; profiles define node
+   vocabulary, edge semantics, and probe framing; the invariants,
+   divergence types, and gates are universal. List the four profiles
+   and each fixture's documented weak spot so judges can test
+   acceptance themselves.
+6. Triage shows the profile per row (graphite mono label).
+
+Acceptance: all four fixtures complete deterministic vivas; each new
+fixture's scripted weak defense produces a finding on its documented
+weak-spot span and none elsewhere; understanding map and meta-viva
+work unchanged on all profiles; per-profile dossier vocabulary
+correct; the 5/IP + judge-code + global limits apply across all
+cards from one shared budget; full offline suite, build, and
+client-secret scan clean; deployed and production-verified; the build
+log entry lists every deviation from the mockups and why. THEN the
+freeze is real: video and submission only.
+```
+
+Decisions and outcomes:
+
+- Added strict `lab_report` and `case_analysis` profile contracts while keeping one universal examiner, rationale gate, decision log, divergence vocabulary, understanding map, meta-viva, persistence path, and rate-limited session endpoint. Examinable node types are explicit per profile so essay and code retain their prior routing behavior while every lab and case node can be defended; the stable prompt-plus-graph prefix remains byte-identical across turns.
+- Added original 443-word photosynthesis and 413-word cooperative-expansion fixtures with exact-offset deterministic graphs. Scripted weak defenses produce exactly one `mechanism_gap` on the lab's universal sole-factor conclusion and exactly one `cannot_reconstruct` on the case schedule's implied spare-volunteer assumption; strongly defended nodes receive no findings. All 54 offline tests, TypeScript, production build, and the 33-asset client-secret scan pass.
+- Reimplemented the four-card exhibit grid, profile dossier labels/source inks, and graphite triage labels from real profile, graph, decision-log, and findings data. Deliberate mockup deviations: retained “about two minutes” instead of the mockup's “2-minute” copy; did not reproduce the illustrative mid-viva marginalia because its citation-verification wording exceeds Eleza's content-reconstruction scope and a static panel labeled live would misrepresent hardcoded content; kept the existing real fixture essay/action area, paste/practice paths, understanding map, meta-viva, explicit turn controls, disclosures, print action, and student link because they are shipped behavior omitted from the specimens; added card actions because fixture-only cards must actually start their domain flow; and rejected the prose dossier mockup's extra finding label because findings remain exactly `cannot_reconstruct`, `mechanism_gap`, or `inconsistency`. Desktop and 390px browser checks show the four-card grid without overflow and a lab card handoff with all eight graph nodes. Production deployment remains intentionally blocked until migrations 005 and 006 are applied to the configured Supabase project.

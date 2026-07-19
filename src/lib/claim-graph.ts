@@ -4,10 +4,13 @@ import { getDomainProfile, type ProfileId } from "@/lib/domain-profile";
 export const graphNodeTypeSchema = z.enum([
   "claim", "evidence", "citation",
   "design_decision", "implementation", "assumption",
+  "hypothesis", "method_choice", "interpretation", "conclusion",
+  "recommendation", "tradeoff", "rejected_alternative",
 ]);
 export const graphEdgeTypeSchema = z.enum([
   "supports", "rebuts", "depends_on",
   "constrains", "alternative_to",
+  "tests", "undermines",
 ]);
 
 export const graphNodeSchema = z.object({
@@ -37,6 +40,14 @@ const codeClaimGraphSchema = z.object({
   nodes: z.array(graphNodeSchema.extend({ type: z.enum(["design_decision", "implementation", "assumption"]) })).min(1),
   edges: z.array(graphEdgeSchema.extend({ type: z.enum(["depends_on", "constrains", "alternative_to"]) })),
 });
+const labReportClaimGraphSchema = z.object({
+  nodes: z.array(graphNodeSchema.extend({ type: z.enum(["hypothesis", "method_choice", "interpretation", "conclusion"]) })).min(1),
+  edges: z.array(graphEdgeSchema.extend({ type: z.enum(["supports", "tests", "depends_on"]) })),
+});
+const caseAnalysisClaimGraphSchema = z.object({
+  nodes: z.array(graphNodeSchema.extend({ type: z.enum(["recommendation", "assumption", "tradeoff", "rejected_alternative"]) })).min(1),
+  edges: z.array(graphEdgeSchema.extend({ type: z.enum(["supports", "undermines", "depends_on"]) })),
+});
 
 export type ClaimGraph = z.infer<typeof claimGraphSchema>;
 export type ClaimGraphNode = z.infer<typeof graphNodeSchema>;
@@ -46,11 +57,15 @@ export function primaryNodeType(profileId: ProfileId = "essay") {
 }
 
 export function isPrimaryNode(node: ClaimGraphNode, profileId: ProfileId = "essay") {
-  return node.type === primaryNodeType(profileId);
+  const examinableTypes: readonly string[] = getDomainProfile(profileId).examinable_node_types;
+  return examinableTypes.includes(node.type);
 }
 
 export function claimGraphSchemaForProfile(profileId: ProfileId = "essay") {
-  return profileId === "code" ? codeClaimGraphSchema : essayClaimGraphSchema;
+  if (profileId === "code") return codeClaimGraphSchema;
+  if (profileId === "lab_report") return labReportClaimGraphSchema;
+  if (profileId === "case_analysis") return caseAnalysisClaimGraphSchema;
+  return essayClaimGraphSchema;
 }
 
 export function validateGraphAgainstText(graph: ClaimGraph, sourceText: string, profileId?: ProfileId): ClaimGraph {

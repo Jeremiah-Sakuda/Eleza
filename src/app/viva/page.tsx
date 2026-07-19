@@ -516,6 +516,9 @@ export default function VivaPage() {
   const durationLabel = (handoff.durationMs ?? VIVA_DURATION_MS) === 120_000 ? "about two minutes" : `${durationMinutes} minutes`;
   const isTextMode = handoff.deliveryMode === "text";
   const isCode = handoff.profileId === "code";
+  const profileId = handoff.profileId ?? "essay";
+  const defenseNoun = profileId === "lab_report" ? "the evidence" : profileId === "case_analysis" ? "the recommendation" : isCode ? "the decisions" : "the argument";
+  const graphDescription = profileId === "lab_report" ? "lab report’s parsed hypotheses, methods, interpretations, and conclusions" : profileId === "case_analysis" ? "case analysis’s parsed recommendations, assumptions, and tradeoffs" : isCode ? "program’s parsed design decisions" : "essay’s parsed claims";
   const health = isTextMode ? "typed-answer mode" : stallCount === 0 ? `${Math.round(maxDeadAirMs)} ms max handoff` : `${stallCount} handoff${stallCount === 1 ? "" : "s"} over 2s`;
 
   return <div className="viva-shell">
@@ -526,14 +529,14 @@ export default function VivaPage() {
       <section className="transcript-column">
         {isCode && <CodeSourcePanel sourceText={handoff.sourceText} graph={handoff.graph} activeTargetId={activeTargetId} decisionLog={decisionLog} />}
         <p className="column-label">TRANSCRIPT</p>
-        {turns.length === 0 && <div className="viva-ready-copy"><h1>{handoff.practice ? "Warm up first." : isCode ? "Defend the decisions." : "Defend the argument."}</h1><p>The AI examiner asks only questions tied to this {isCode ? "program’s parsed design decisions" : "essay’s parsed claims"}. {isTextMode ? "Type each answer and send it when complete." : "Answer out loud, then press Finish answer when you are done."} The session lasts {durationLabel}.</p>{!handoff.practice && <p className="viva-clamp-note">Real vivas are teacher-configurable at 5–8 minutes. This hosted demo is capped at about two minutes as a public-cost control.</p>}{handoff.sourceKind === "paste" && <p className="viva-data-note">Your text and transcript are stored to generate your dossier.</p>}<p className="viva-start-disclosure">AI INTERACTION · {handoff.practice ? "UNRECORDED PRACTICE" : "TRANSCRIPT AND ROUTING RECEIPTS RECORDED"}</p><button onClick={startLiveSession} disabled={status === "connecting"}>{status === "connecting" ? "Connecting…" : `Start ${handoff.practice ? "warm-up" : "viva"} — ${durationLabel}`}</button></div>}
+        {turns.length === 0 && <div className="viva-ready-copy"><h1>{handoff.practice ? "Warm up first." : `Defend ${defenseNoun}.`}</h1><p>The AI examiner asks only questions tied to this {graphDescription}. {isTextMode ? "Type each answer and send it when complete." : "Answer out loud, then press Finish answer when you are done."} The session lasts {durationLabel}.</p>{!handoff.practice && <p className="viva-clamp-note">Real vivas are teacher-configurable at 5–8 minutes. This hosted demo is capped at about two minutes as a public-cost control.</p>}{handoff.sourceKind === "paste" && <p className="viva-data-note">Your text and transcript are stored to generate your dossier.</p>}<p className="viva-start-disclosure">AI INTERACTION · {handoff.practice ? "UNRECORDED PRACTICE" : "TRANSCRIPT AND ROUTING RECEIPTS RECORDED"}</p><button onClick={startLiveSession} disabled={status === "connecting"}>{status === "connecting" ? "Connecting…" : `Start ${handoff.practice ? "warm-up" : "viva"} — ${durationLabel}`}</button></div>}
         {turns.map((turn) => <article className={`transcript-turn ${turn.speaker}`} key={turn.id}>
           <time>{formatElapsed(turn.elapsedMs)}</time><div><small>{turn.speaker.toUpperCase()}{turn.targetClaimId ? ` · ${turn.targetClaimId}${turn.questionKind === "bridge" ? " · BRIDGE" : ""}` : ""}</small><p>{turn.text}</p></div>
         </article>)}
         {draft && <article className={`transcript-turn ${draft.speaker} draft`}><time>LIVE</time><div><small>{draft.speaker.toUpperCase()}</small><p>{draft.text}</p></div></article>}
         {isTextMode && status === "live" && <form className="typed-answer-form" onSubmit={submitTypedAnswer}>
           <label htmlFor="typed-answer">Your answer</label>
-          <textarea id="typed-answer" value={typedAnswer} onChange={(event) => setTypedAnswer(event.target.value)} placeholder={isCode ? "Explain why you chose this structure and what could break…" : "Explain the claim in your own words…"} rows={4} autoFocus />
+          <textarea id="typed-answer" value={typedAnswer} onChange={(event) => setTypedAnswer(event.target.value)} placeholder={profileId === "lab_report" ? "Connect the result to your interpretation and its limits…" : profileId === "case_analysis" ? "Name the assumption and what changes if it is wrong…" : isCode ? "Explain why you chose this structure and what could break…" : "Explain the claim in your own words…"} rows={4} autoFocus />
           <button type="submit" disabled={!typedAnswer.trim()}>Send answer</button>
         </form>}
         {status === "complete" && <div className="viva-complete-rule">{handoff.practice ? <>Warm-up complete. Nothing from this session was saved. <a href="/">Return to the judge demo</a>.</> : <>Viva complete. {decisionLog.length} examiner decisions recorded.</>}</div>}

@@ -22,12 +22,12 @@ export async function generateClaimGraph(sourceText: string, options: { minimumC
 
   const prompt = await renderClaimGraphPrompt(sourceText, profileId);
   const profileSchema = claimGraphSchemaForProfile(profileId);
-  const primaryType = getDomainProfile(profileId).node_types[0];
+  const examinableTypes = getDomainProfile(profileId).examinable_node_types.join(", ");
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const response = await openai.responses.create({
       model: MODELS.claimGraph,
-      input: attempt === 0 ? prompt : `${prompt}\n\nYour first output did not return a valid ${profileId} graph with ${minimumClaimCount} ${primaryType} nodes. Re-extract with at least ${minimumClaimCount} distinct ${primaryType} nodes when the submission supports them.`,
+      input: attempt === 0 ? prompt : `${prompt}\n\nYour first output did not return a valid ${profileId} graph with ${minimumClaimCount} examinable nodes. Re-extract at least ${minimumClaimCount} distinct nodes across these allowed examinable types when the submission supports them: ${examinableTypes}.`,
       text: {
         format: {
           type: "json_schema",
@@ -45,13 +45,14 @@ export async function generateClaimGraph(sourceText: string, options: { minimumC
       // DECISION: a profile-invalid graph gets the same single bounded re-extraction as an under-granular graph.
     }
   }
-  throw new Error(profileId === "code"
-    ? "This program does not expose enough distinct design decisions to examine. Eleza works best on code with several choices, constraints, or failure modes to defend."
-    : "This text does not have enough argumentative structure to examine. Eleza works best on writing that makes a position and supports it with several distinct claims.");
+  if (profileId === "code") throw new Error("This program does not expose enough distinct design decisions to examine. Eleza works best on code with several choices, constraints, or failure modes to defend.");
+  if (profileId === "lab_report") throw new Error("This report does not expose enough evidentiary structure to examine. Eleza works best on lab reports with a hypothesis, material method choices, results, and an interpretation to defend.");
+  if (profileId === "case_analysis") throw new Error("This analysis does not expose enough decision structure to examine. Eleza works best on cases with a recommendation, assumptions, tradeoffs, and alternatives to defend.");
+  throw new Error("This text does not have enough argumentative structure to examine. Eleza works best on writing that makes a position and supports it with several distinct claims.");
 }
 
 function generateLocalDemoGraph(sourceText: string, profileId: ProfileId): ClaimGraph {
-  if (profileId === "code") throw new Error("Code graph generation requires OPENAI_API_KEY outside the bundled deterministic fixture.");
+  if (profileId !== "essay") throw new Error(`${profileId} graph generation requires OPENAI_API_KEY outside its bundled deterministic fixture.`);
   // DECISION: preserve a deterministic local path so the judge demo remains inspectable without credentials.
   const paragraphs = [...sourceText.matchAll(/\S[\s\S]*?(?=\n\s*\n|$)/g)].map((match) => ({
     text: match[0], start: match.index ?? 0,

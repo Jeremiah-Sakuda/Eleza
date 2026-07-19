@@ -90,3 +90,15 @@ h1 { font-family: "Spectral", Georgia, serif; font-weight: 500; font-size: clamp
 @media (prefers-reduced-motion:reduce) { .code-leader-lines path{animation:none}.code-line{scroll-behavior:auto} }
 
 @media print { .dossier-code-receipt{border-left-color:#000!important;background:transparent!important}.dossier-code-receipt.finding{border-left-color:#9a681f!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}.dossier-code-line>span{color:#444!important} }
+
+/* Phase 8C domain surfaces follow the four-column exhibit grid in the supplied landing reference. */
+.dossier-header .dossier-defense-label { margin:8px 0 0; color:#8a8f98; letter-spacing:.16em; }
+.triage-title-cell { display:flex; flex-direction:column; gap:5px; }
+.triage-profile { color:#8a8f98; font:8.5px "JetBrains Mono",monospace; letter-spacing:.13em; }
+.judge-profile-grid { grid-template-columns:repeat(4,minmax(0,1fr)); }
+.judge-profile-grid article { min-height:270px; }
+.judge-profile-grid small { min-height:24px; color:#8a8f98; font:8.5px/1.4 "JetBrains Mono",monospace; letter-spacing:.12em; }
+.judge-profile-grid h2 { margin-top:8px; }
+.judge-profile-grid a,.judge-profile-grid button { font-size:12px; }
+@media (max-width:960px) and (min-width:801px) { .judge-profile-grid{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (max-width:800px) { .judge-profile-grid{grid-template-columns:1fr}.judge-profile-grid article{min-height:235px}.triage-title-cell{grid-column:1/-1} }

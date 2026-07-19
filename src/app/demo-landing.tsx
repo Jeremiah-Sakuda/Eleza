@@ -2,11 +2,18 @@
 
 import { useEffect, useState } from "react";
 import type { ClaimGraph } from "@/lib/claim-graph";
+import type { ProfileId } from "@/lib/domain-profile";
 import { countWords, PASTE_MAX_WORDS, PASTE_MIN_WORDS } from "@/lib/paste-submission";
 
 type DemoFixture = { title: string; sourceText: string; graph: ClaimGraph };
 
-export default function DemoLanding({ judge, practice, code }: { judge: DemoFixture; practice: DemoFixture; code: DemoFixture }) {
+export default function DemoLanding({ judge, practice, code, labReport, caseAnalysis }: {
+  judge: DemoFixture;
+  practice: DemoFixture;
+  code: DemoFixture;
+  labReport: DemoFixture;
+  caseAnalysis: DemoFixture;
+}) {
   const [pastedText, setPastedText] = useState("");
   const [pasteError, setPasteError] = useState("");
   const [mappingPaste, setMappingPaste] = useState(false);
@@ -18,7 +25,7 @@ export default function DemoLanding({ judge, practice, code }: { judge: DemoFixt
     setJudgeAccessCode(query.get("judge_code") ?? query.get("judge") ?? "");
   }, []);
 
-  function start(fixture: DemoFixture, options: { practice: boolean; deliveryMode: "voice" | "text"; profileId?: "essay" | "code" }) {
+  function start(fixture: DemoFixture, options: { practice: boolean; deliveryMode: "voice" | "text"; profileId?: ProfileId }) {
     sessionStorage.setItem("eleza:viva-handoff", JSON.stringify({
       ...fixture,
       practice: options.practice,
@@ -64,7 +71,7 @@ export default function DemoLanding({ judge, practice, code }: { judge: DemoFixt
     <nav className="judge-nav"><a href="/" className="wordmark">ELEZA</a><div><a href="/triage">Teacher triage</a><span>NO LOGIN · ABOUT TWO MINUTES</span></div></nav>
     <header className="judge-hero">
       <p className="eyebrow">RECEIPTS, NOT VERDICTS</p>
-      <h1>An essay can&apos;t tell you what a student understands.<br />A conversation can.</h1>
+      <h1>A submission can&apos;t tell you what a student understands.<br />A conversation can.</h1>
       <p>Eleza holds a short oral defense against a submission’s exact claims, shows why it routes every question, and returns evidence instead of a score.</p>
     </header>
 
@@ -88,20 +95,38 @@ export default function DemoLanding({ judge, practice, code }: { judge: DemoFixt
     </main>
 
     <section className="judge-profile-options" aria-labelledby="defense-types-title">
-      <div id="defense-types-title" className="judge-section-rule"><span>THINGS A STUDENT CAN DEFEND</span><span>TWO LIVE PROFILES</span></div>
+      <div id="defense-types-title" className="judge-section-rule"><span>THINGS A STUDENT CAN DEFEND</span><span>FOUR DOMAIN PROFILES</span></div>
       <div className="judge-profile-grid">
-        <article>
+        <article className="essay-profile-card">
+          <small>ARGUMENTATIVE WRITING</small>
           <h2>Essay</h2>
           <p>Claims and the evidence behind them.</p>
           <span>CLAIM 03</span>
           <a href="#paste-title">or defend your own writing</a>
         </article>
         <article>
+          <small>SYNTHETIC FIXTURE ONLY</small>
           <h2>Code</h2>
           <p>Design decisions and what breaks without them.</p>
           <span>DECISION 02</span>
           <button type="button" onClick={() => start(code, { practice: false, deliveryMode: "voice", profileId: "code" })}>Defend this code</button>
           <button className="judge-code-text" type="button" onClick={() => start(code, { practice: false, deliveryMode: "text", profileId: "code" })}>Use typed answers</button>
+        </article>
+        <article>
+          <small>SYNTHETIC FIXTURE ONLY</small>
+          <h2>Lab report</h2>
+          <p>Methods, results, interpretations, and what would falsify them.</p>
+          <span>INTERPRETATION 01</span>
+          <button type="button" onClick={() => start(labReport, { practice: false, deliveryMode: "voice", profileId: "lab_report" })}>Defend this lab report</button>
+          <button className="judge-code-text" type="button" onClick={() => start(labReport, { practice: false, deliveryMode: "text", profileId: "lab_report" })}>Use typed answers</button>
+        </article>
+        <article>
+          <small>SYNTHETIC FIXTURE ONLY</small>
+          <h2>Case analysis</h2>
+          <p>Recommendations, tradeoffs, assumptions, and rejected alternatives.</p>
+          <span>ASSUMPTION 01</span>
+          <button type="button" onClick={() => start(caseAnalysis, { practice: false, deliveryMode: "voice", profileId: "case_analysis" })}>Defend this case analysis</button>
+          <button className="judge-code-text" type="button" onClick={() => start(caseAnalysis, { practice: false, deliveryMode: "text", profileId: "case_analysis" })}>Use typed answers</button>
         </article>
       </div>
     </section>
@@ -123,10 +148,10 @@ export default function DemoLanding({ judge, practice, code }: { judge: DemoFixt
     </section>
 
     <section className="judge-steps" aria-label="How the demo works">
-      <div><b>01</b><h3>Read the essay</h3><p>The sample is already parsed into exact claim spans.</p></div>
+      <div><b>01</b><h3>Read the submission</h3><p>Each fixture is already parsed into exact graph-node spans.</p></div>
       <div><b>02</b><h3>Talk it through</h3><p>Answer by voice or text while the examiner’s receipts appear live.</p></div>
       <div><b>03</b><h3>Get your dossier</h3><p>See what you defended and any content gaps. No score.</p></div>
     </section>
-    <footer className="judge-footer"><span>NO DETECTION. NO SCORES. EVIDENCE ONLY.</span><span>Eleza · oral defense for student writing</span></footer>
+    <footer className="judge-footer"><span>NO DETECTION. NO SCORES. EVIDENCE ONLY.</span><span>Eleza · oral defense for student work</span></footer>
   </div>;
 }

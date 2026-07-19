@@ -2,6 +2,7 @@ export const codeProfile = {
   id: "code",
   artifact_noun: "submission",
   node_types: ["design_decision", "implementation", "assumption"],
+  examinable_node_types: ["design_decision"],
   edge_types: ["depends_on", "constrains", "alternative_to"],
   probe_framing: [
     "- `strong`: the answer justifies the design decision, reconstructs how the implementation works, and identifies relevant failure modes.",
